@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWI Server Control Panel</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            margin-top: 2rem;
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            margin-bottom: 2rem;
+        }
+        h1 {
+            color: var(--text);
+            margin: 0 0 1.5rem 0;
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+        .status-badge {
+            background: #dcfce7;
+            color: #166534;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+        }
+        .status-dot {
+            height: 8px;
+            width: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            background-color: var(--success);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .metric-card {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 0.5rem 0;
+        }
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .chart-container {
+            position: relative;
+            height: 200px;
+            width: 100%;
+        }
+        .footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            padding: 2rem 0;
+            border-top: 1px solid var(--border);
+            width: 100%;
+            max-width: 1000px;
+        }
+        .footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+            margin: 0 10px;
+            transition: color 0.2s;
+        }
+        .footer a:hover {
+            color: var(--primary);
+        }
+        
+        /* Setup Form Styles */
+        .setup-container {
+            max-width: 480px;
+            margin: 4rem auto;
+            text-align: left;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+        button:disabled {
+            background-color: var(--text-muted);
+            cursor: not-allowed;
+        }
+        .error-message {
+            color: var(--danger);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        
+        #dashboard { display: none; }
+        #setup-form { display: none; }
+        #loading { display: flex; justify-content: center; align-items: center; height: 50vh; }
+    </style>
+</head>
+<body>
+    <!-- Loading State -->
+    <div id="loading">
+        <p>Connecting to AWI Server...</p>
+    </div>
+
+    <!-- Dashboard State -->
+    <div id="dashboard" class="container">
+        <div class="card">
+            <h1>
+                <span>Server Control Panel</span>
+                <span class="status-badge"><span class="status-dot"></span> System Operational</span>
+            </h1>
+            
+            <div class="grid">
+                <div class="metric-card">
+                    <div class="metric-label">Project</div>
+                    <div class="metric-value" style="font-size: 1.5rem;">ThinkNoteAI</div>
+                    <div class="metric-label" style="color: var(--success);">Production Environment</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Active Connections</div>
+                    <div class="metric-value" id="connections">12</div>
+                    <div class="metric-label">↑ 2 new in last hour</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Server Load</div>
+                    <div class="metric-value" id="load-val">24%</div>
+                    <div class="metric-label">Optimal performance</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Memory Usage</div>
+                    <div class="metric-value" id="mem-val">1.2 GB</div>
+                    <div class="metric-label">of 8 GB allocated</div>
+                </div>
+            </div>
+
+            <div class="grid">
+                <div class="metric-card" style="grid-column: span 2;">
+                    <h2>System Load</h2>
+                    <div class="chart-container">
+                        <canvas id="loadChart"></canvas>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <h2>Requests / Sec</h2>
+                    <div class="metric-value" style="margin-top: 2rem;">482</div>
+                    <div class="metric-label">Avg latency: 45ms</div>
+                </div>
+            </div>
+            
+            <div style="background: #f1f5f9; padding: 1rem; border-radius: 6px;">
+                <h3 style="margin: 0 0 1rem 0; font-size: 1rem;">Service Status</h3>
+                <div style="display: flex; gap: 2rem;">
+                    <div><span class="status-dot"></span> Database: <strong>Connected</strong></div>
+                    <div><span class="status-dot"></span> API Gateway: <strong>Online</strong></div>
+                    <div><span class="status-dot"></span> Auth Service: <strong>Active</strong></div>
+                    <div><span class="status-dot"></span> Realtime: <strong>Syncing</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Setup State -->
+    <div id="setup-form" class="container setup-container">
+        <div class="card">
+            <h1 style="justify-content: center;">Setup AWI Server</h1>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Connect your Artificial Wisdom Intelligence to a Supabase backend to get started.</p>
+            
+            <form id="configForm">
+                <div class="form-group">
+                    <label for="url">Project URL</label>
+                    <input type="url" id="url" placeholder="https://your-project.supabase.co" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="key">Publishable API Key</label>
+                    <input type="password" id="key" placeholder="sb_publishable_..." required>
+                </div>
+
+                <div class="form-group">
+                    <label for="serviceKey">Secret API Key (service_role)</label>
+                    <input type="password" id="serviceKey" placeholder="sb_secret_..." required>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Required for database management and user administration.</div>
+                </div>
+
+                <div class="error-message" id="errorMsg"></div>
+                <button type="submit" id="submitBtn">Connect & Save</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Manual Setup State -->
+    <div id="manual-setup" class="container setup-container" style="display: none;">
+        <div class="card">
+            <h1 style="justify-content: center; color: var(--text);">Manual Setup Required</h1>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem;">
+                For security reasons, we could not automatically create the required database helper function. Please create it manually.
+            </p>
+            
+            <div style="background: #f8fafc; padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1.5rem;">
+                <h3 style="margin-top: 0; font-size: 1rem;">Instructions:</h3>
+                <ol style="margin: 0; padding-left: 1.2rem; color: var(--text); line-height: 1.6;">
+                    <li>Go to your <strong>Supabase Project Dashboard</strong>.</li>
+                    <li>Navigate to the <strong>SQL Editor</strong> (left sidebar).</li>
+                    <li>Click <strong>New Query</strong>.</li>
+                    <li>Copy and paste the code below into the editor.</li>
+                    <li>Click <strong>Run</strong> (bottom right of editor).</li>
+                </ol>
+            </div>
+
+            <div style="position: relative; margin-bottom: 2rem;">
+                <textarea id="sql-code" readonly style="
+                    width: 100%; 
+                    height: 200px; 
+                    background: #1e293b; 
+                    color: #e2e8f0; 
+                    font-family: monospace; 
+                    padding: 1rem; 
+                    border-radius: 6px; 
+                    border: none; 
+                    resize: vertical;
+                    font-size: 0.9rem;
+                "></textarea>
+                <button onclick="copySql()" style="
+                    position: absolute; 
+                    top: 10px; 
+                    right: 10px; 
+                    width: auto; 
+                    padding: 4px 12px; 
+                    font-size: 0.8rem; 
+                    background: rgba(255,255,255,0.1); 
+                    border: 1px solid rgba(255,255,255,0.2);
+                ">Copy</button>
+            </div>
+
+            <div style="display: flex; gap: 1rem;">
+                <button onclick="retryConnection()" style="background-color: var(--success);">I have run the SQL, Try Again</button>
+                <button onclick="showSetupForm()" style="background-color: var(--text-muted); width: auto;">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Profile State -->
+    <div id="create-profile" class="container setup-container" style="display: none;">
+        <div class="card">
+            <h1 style="justify-content: center;">Create Profile</h1>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Database connected! Now, let's create your admin profile.</p>
+            
+            <form id="profileForm">
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" placeholder="e.g. Alice" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" placeholder="e.g. Smith" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="userName">Username</label>
+                    <input type="text" id="userName" placeholder="e.g. alice" required>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">This will be your handle in AWI.</div>
+                </div>
+
+                <div class="error-message" id="profileErrorMsg"></div>
+                <button type="submit" id="profileSubmitBtn">Create Profile</button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div style="margin-bottom: 1rem;">
+            <a href="https://github.com/vannersoftware/awi">GitHub</a> • 
+            <a href="https://github.com/vannersoftware/awi/blob/main/docs/AWI_SERVER_DOCUMENTATION.md">Documentation</a> • 
+            <a href="https://github.com/vannersoftware/awi/blob/main/docs/SUPABASE_SETUP.md">Quick Start</a> • 
+            <a href="https://github.com/vannersoftware/awi/blob/main/LICENSE">License</a>
+        </div>
+        <div>&copy; 2025 AWI Project. Open Source under MIT License.</div>
+    </footer>
+
+    <script>
+        const API_BASE = '/awi';
+        let chart;
+
+        // --- Demo Data Simulation ---
+        function initCharts() {
+            const ctx = document.getElementById('loadChart').getContext('2d');
+            const initialData = Array(20).fill(0).map(() => 20 + Math.random() * 10);
+            
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array(20).fill(''),
+                    datasets: [{
+                        label: 'CPU Load %',
+                        data: initialData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, max: 100, grid: { color: '#e2e8f0' } },
+                        x: { display: false }
+                    },
+                    animation: { duration: 0 }
+                }
+            });
+
+            // Simulate live data
+            setInterval(() => {
+                const newVal = 20 + Math.random() * 15 + (Math.random() > 0.8 ? 20 : 0); // Random spikes
+                
+                // Update chart
+                const data = chart.data.datasets[0].data;
+                data.shift();
+                data.push(newVal);
+                chart.update();
+
+                // Update text metrics
+                document.getElementById('load-val').innerText = Math.round(newVal) + '%';
+                
+                // Randomly fluctuate connections
+                const conns = parseInt(document.getElementById('connections').innerText);
+                if (Math.random() > 0.7) {
+                    const change = Math.random() > 0.5 ? 1 : -1;
+                    document.getElementById('connections').innerText = Math.max(10, conns + change);
+                }
+
+                // Randomly fluctuate memory
+                if (Math.random() > 0.8) {
+                    const baseMem = 1.2;
+                    const flucc = (Math.random() * 0.1) - 0.05;
+                    document.getElementById('mem-val').innerText = (baseMem + flucc).toFixed(2) + ' GB';
+                }
+
+            }, 2000);
+        }
+
+        async function checkStatus() {
+            try {
+                const res = await fetch(`${API_BASE}/status`);
+                const data = await res.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                // Hide all views first
+                document.getElementById('dashboard').style.display = 'none';
+                document.getElementById('setup-form').style.display = 'none';
+                document.getElementById('manual-setup').style.display = 'none';
+                document.getElementById('create-profile').style.display = 'none';
+
+                if (data.database === 'connected') {
+                    if (data.manualSetup) {
+                        document.getElementById('manual-setup').style.display = 'block';
+                        document.getElementById('sql-code').value = data.sql || '-- Error: SQL not provided';
+                    } else if (data.profileNeeded) {
+                        document.getElementById('create-profile').style.display = 'block';
+                    } else {
+                        document.getElementById('dashboard').style.display = 'block';
+                        // Only init charts if not already initialized or if we want to refresh
+                        if (!chart) initCharts(); 
+                    }
+                } else {
+                    // Default to setup form if not connected
+                    document.getElementById('setup-form').style.display = 'block';
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading').innerHTML = '<p style="color: var(--danger)">Server unreachable. Is node running?</p>';
+            }
+        }
+
+        async function createProfile(payload) {
+            const btn = document.getElementById('profileSubmitBtn');
+            const error = document.getElementById('profileErrorMsg');
+            
+            btn.disabled = true;
+            btn.innerText = 'Creating...';
+            error.style.display = 'none';
+
+            try {
+                const res = await fetch(`${API_BASE}/profile`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    btn.innerText = 'Success!';
+                    setTimeout(checkStatus, 1000);
+                } else {
+                    // Pass suggestion through error object if available
+                    const e = new Error(data.message || 'Profile creation failed');
+                    if (data.suggestion) e.suggestion = data.suggestion;
+                    throw e;
+                }
+            } catch (err) {
+                if (err.suggestion) {
+                    error.innerHTML = `Username taken. Try <strong>${err.suggestion}</strong>?`;
+                } else {
+                    error.innerText = err.message;
+                }
+                error.style.display = 'block';
+                btn.disabled = false;
+                btn.innerText = 'Create Profile';
+            }
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                firstName: document.getElementById('firstName').value.trim(),
+                lastName: document.getElementById('lastName').value.trim(),
+                userName: document.getElementById('userName').value.trim()
+            };
+            await createProfile(payload);
+        });
+
+        async function connectToServer(payload) {
+            const btn = document.getElementById('submitBtn');
+            const error = document.getElementById('errorMsg');
+            
+            btn.disabled = true;
+            btn.innerText = 'Connecting...';
+            error.style.display = 'none';
+
+            try {
+                const res = await fetch(`${API_BASE}/setup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    btn.innerText = 'Success!';
+                    setTimeout(checkStatus, 1000);
+                } else if (data.manualSetup) {
+                    // Switch to manual setup view
+                    document.getElementById('setup-form').style.display = 'none';
+                    document.getElementById('manual-setup').style.display = 'block';
+                    document.getElementById('sql-code').value = data.sql || '-- Error: SQL not provided';
+                    btn.disabled = false;
+                    btn.innerText = 'Connect & Save';
+                } else {
+                    throw new Error(data.message || 'Connection failed');
+                }
+            } catch (err) {
+                error.innerText = err.message;
+                error.style.display = 'block';
+                btn.disabled = false;
+                btn.innerText = 'Connect & Save';
+            }
+        }
+
+        document.getElementById('configForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const error = document.getElementById('errorMsg');
+            
+            // Validate Keys
+            const pKey = document.getElementById('key').value.trim();
+            const sKey = document.getElementById('serviceKey').value.trim();
+            
+            error.style.display = 'none';
+
+            if (!pKey.startsWith('sb_publishable')) {
+                error.innerText = "Invalid Publishable Key. It should start with 'sb_publishable'.";
+                error.style.display = 'block';
+                return;
+            }
+            // Allow 'sb_secret' (new) or 'eyJ' (legacy JWT)
+            if (!sKey.startsWith('sb_secret') && !sKey.startsWith('eyJ')) {
+                error.innerHTML = "Invalid Secret Key. It should start with 'sb_secret' (or 'eyJ').<br>Find it in <strong>Project Settings > API Keys</strong>.";
+                error.style.display = 'block';
+                return;
+            }
+
+            const payload = {
+                supabaseUrl: document.getElementById('url').value.trim(),
+                supabaseKey: pKey,
+                serviceRoleKey: sKey
+            };
+            await connectToServer(payload);
+        });
+
+        function showSetupForm() {
+            document.getElementById('manual-setup').style.display = 'none';
+            document.getElementById('setup-form').style.display = 'block';
+        }
+
+        function copySql() {
+            const copyText = document.getElementById("sql-code");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999); 
+            navigator.clipboard.writeText(copyText.value).then(() => {
+                const btn = document.querySelector('#manual-setup button[onclick="copySql()"]');
+                const originalText = btn.innerText;
+                btn.innerText = 'Copied!';
+                setTimeout(() => btn.innerText = originalText, 2000);
+            });
+        }
+
+        async function retryConnection() {
+            const payload = {
+                supabaseUrl: document.getElementById('url').value,
+                supabaseKey: document.getElementById('key').value,
+                serviceRoleKey: document.getElementById('serviceKey').value
+            };
+            
+            // Show loading state on the manual page button temporarily? 
+            // Or just switch back? Let's switch back to show the main form loading state 
+            // effectively or just run the connect logic.
+            // Better UX: Keep on manual page but show loading there? 
+            // Simpler: Just call connectToServer. If success, it goes to dashboard. 
+            // If fail again (manual still needed), it stays here or refreshes this view.
+            
+            const btn = document.querySelector('#manual-setup button[onclick="retryConnection()"]');
+            const originalText = btn.innerText;
+            btn.innerText = 'Connecting...';
+            btn.disabled = true;
+            
+            await connectToServer(payload);
+            
+            // If we are still here, it failed or asked for manual setup again.
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+
+        // Initial check
+        checkStatus();
+    </script>
+</body>
+</html>

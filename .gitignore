@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs and temporary data
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+data/logs/*
+data/temp/*
+data/storage/*
+!data/logs/.gitkeep
+!data/temp/.gitkeep
+!data/storage/.gitkeep
+
+# Build outputs
+dist/
+build/
+.vite/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.VolumeIcon.icns
+
+# IDEs
+.idea/
+
+# Misc
+*.bak
+*.swp
+*~

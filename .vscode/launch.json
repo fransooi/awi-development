@@ -1,0 +1,47 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+        "name": "Awi Server-macOS",
+        "program": "${workspaceFolder}/mac_node_prompt.mjs",
+        "request": "launch",
+        "skipFiles": [
+            "<node_internals>/**"
+        ],
+        "runtimeArgs": ["--preserve-symlinks"],
+        "console": "integratedTerminal",
+        "outputCapture": "std",
+        "type": "node",
+        "envFile": "${workspaceFolder}/.env"
+    },  
+    {
+        "name": "Awi Server-Windows",
+        "program": "${workspaceFolder}/windows-node-prompt.mjs",
+        "request": "launch",
+        "skipFiles": [
+            "<node_internals>/**"
+        ],
+        "runtimeArgs": ["--preserve-symlinks"],
+        "console": "integratedTerminal",
+        "outputCapture": "std",
+        "type": "node",
+        "envFile": "${workspaceFolder}/.env"
+    },
+    {
+        "name": "Awi Server-Linux",
+        "program": "${workspaceFolder}/linux-node-prompt.mjs",
+        "request": "launch",
+        "skipFiles": [
+            "<node_internals>/**"
+        ],
+        "runtimeArgs": ["--preserve-symlinks"],
+        "console": "integratedTerminal",
+        "outputCapture": "std",
+        "type": "node",
+        "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}
