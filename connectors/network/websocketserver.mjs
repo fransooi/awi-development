@@ -44,6 +44,15 @@ class ConnectorWebSocketServer extends ConnectorBase
 	{
 		super.connect( options );
 		this.port = options.port || 1033;
+		// Default to enabled unless explicitly disabled
+		this.enabled = (options.enable !== undefined) ? options.enable : true;
+
+		if ( !this.enabled )
+		{
+			this.connectMessage = '\n.... WebSocket Server disabled by configuration.';
+			return this.setConnected( true );
+		}
+
 		this.templatesPath = options.templatesPath || this.awi.system.getEnginePath() + '/connectors/projects';
 		if ( !this.wsServer )
 		{
@@ -276,7 +285,7 @@ class ConnectorWebSocketServer extends ConnectorBase
 		if ( editor )
 		{
 			var userName = editor.userName;
-			this.awi.editor.print('awi:socket-user-disconnected', { name: userName, user: 'awi' } );
+			this.awi.editor.print('awi:socket-user-disconnected', { name: userName, user: 'awi', verbose: 4 } );
 
 			editor.close();
 			var newEditors = {};
@@ -392,7 +401,7 @@ class ConnectorWebSocketServer extends ConnectorBase
 		var answer = await awi2.connect( {} );
 		if ( answer.isSuccess() )
 		{
-			this.awi.editor.print('awi:socket-new-connection', { name: message.parameters.userName, user: 'awi' } );
+			this.awi.editor.print('awi:socket-new-connection', { name: message.parameters.userName, user: 'awi', verbose: 4 } );
 			for ( var e in awi2.editor.editors )
 			{
 				var current = awi2.editor.editors[e];
@@ -408,5 +417,14 @@ class ConnectorWebSocketServer extends ConnectorBase
 			responseTo: message.command,
 			parameters: { error: 'awi:socket-error-processing-command' }
 		}));
+	}
+	async quit( options )
+	{
+		if ( this.wsServer )
+		{
+			this.wsServer.close();
+			this.wsServer = null;
+		}
+		return super.quit( options );
 	}
 }

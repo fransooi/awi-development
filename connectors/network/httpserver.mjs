@@ -710,13 +710,10 @@ class ConnectorHttpServer extends ConnectorBase
 				if (answer.isSuccess())
 				{
 					const userName = (answer.data && (answer.data.userName || answer.data.username)) || accountInfo.userName || accountInfo.email;
-					if (userName && this.awi.thinknotes && typeof this.awi.thinknotes.createUser === 'function')
+					if (userName)
 					{
-						const provision = await this.awi.thinknotes.createUser({ userName, accountInfo, supabaseTokens });
-						if (provision.isError())
-						{
-							this.awi.log('Connector createUser failed', { source: 'app', level: 'error', functionName: 'createAccount', userName, ...safeErr(provision.error) });
-						}
+						// Broadcast user creation to all connectors (e.g. ThinkNotes)
+						await this.awi.callConnectors( { token: 'createUser', args: { userName, accountInfo, supabaseTokens } } );
 					}
 					return ok(res, answer.data);
 				}
@@ -732,14 +729,8 @@ class ConnectorHttpServer extends ConnectorBase
 				if (answer.isSuccess())
 				{
 					this.keyToUserName[ answer.data.key ] = userName;
-					if (this.awi.thinknotes && typeof this.awi.thinknotes.createUser === 'function')
-					{
-						const provision = await this.awi.thinknotes.createUser({ userName, supabaseTokens });
-						if (provision.isError())
-						{
-							this.awi.log('Connector createUser failed', { source: 'app', level: 'error', functionName: 'loginAccount', userName, ...safeErr(provision.error) });
-						}
-					}
+					// Broadcast login/ensure-user-exists to all connectors
+					await this.awi.callConnectors( { token: 'createUser', args: { userName, supabaseTokens } } );
 					return ok(res, answer.data);
 				}
 				return fail(res, answer.message, answer.getPrint());
@@ -1077,11 +1068,12 @@ class ConnectorHttpServer extends ConnectorBase
 					}
 					const eventType = attrs['ce-type'] || '';
 					const subscriptionSource = attrs['ce-source'] || '';
-					const tn = this.awi && this.awi.thinknotes ? this.awi.thinknotes : null;
-					if (tn && typeof tn.onGoogleWorkspaceMeetEvent === 'function')
-					{
-						await tn.onGoogleWorkspaceMeetEvent({ event, eventType, subscriptionSource, raw: body });
-					}
+					
+					// Broadcast Google Meet event to all connectors
+					await this.awi.callConnectors( { 
+						token: 'onGoogleWorkspaceMeetEvent', 
+						args: { event, eventType, subscriptionSource, raw: body } 
+					});
 				}
 				catch (e)
 				{
@@ -1229,8 +1221,8 @@ class ConnectorHttpServer extends ConnectorBase
 			// Send all non-API requests to index.html
 			this.app.use((req, res, next) =>
 			{
-				// Skip API routes or actual files
-				if (req.url.startsWith(apiBase) || req.url.includes('.'))
+				// Skip API routes
+				if (req.originalUrl.startsWith(apiBase))
 				{
 					return next();
 				}
@@ -1241,6 +1233,30 @@ class ConnectorHttpServer extends ConnectorBase
 					return res.status(400).send('Invalid URL format');
 				}
 
+				// If it looks like a file (has extension), skip (will 404 if not found by static)
+				// Note: some routes might have dots, but usually SPAs don't use dots in routes to avoid this ambiguity
+				const lastPart = req.path.split('/').pop();
+				if (lastPart && lastPart.includes('.'))
+				{
+					return next();
+				}
+
+				// Check for sub-site SPA roots (e.g. /sites/corporate/...)
+				// We look for the first directory that contains an index.html matching the path prefix
+				const pathParts = req.path.split('/').filter(p => p);
+				
+				// Optimization for known structure: /sites/:siteName
+				if (pathParts[0] === 'sites' && pathParts.length >= 2)
+				{
+					const siteName = pathParts[1];
+					const subIndex = path.join(rootDir, 'sites', siteName, 'index.html');
+					if (fs.existsSync(subIndex))
+					{
+						return res.sendFile(subIndex);
+					}
+				}
+
+				// Default fallback to root index.html
 				const indexPath = path.join(rootDir, 'index.html');
 				if (fs.existsSync(indexPath))
 				{
@@ -1322,7 +1338,7 @@ class ConnectorHttpServer extends ConnectorBase
 		if (!this.awi.database || (!this.awi.database.url || !this.awi.database.secretKey))
 		{
 			banner = [
-				"\n",
+				"   ",
 				"********************************************************************",
 				"*                                                                  *",
 				`*  ${projectName.toUpperCase().padEnd(64)}*`,
@@ -1336,14 +1352,19 @@ class ConnectorHttpServer extends ConnectorBase
 		}
 		else
 		{
+			let statusLine = `*  Listening on http://localhost:${port}                              *`;
+			if (!this.serverConfig.enableHttp) {
+				statusLine = "*  Server DISABLED (Console Mode)                                  *";
+			}
+
 			banner = [
-				"\n",
+				"   ",
 				"********************************************************************",
 				"*                                                                  *",
 				`*  ${projectName.toUpperCase().padEnd(64)}*`,
 				"*  OPERATIONAL                                                     *",
 				"*                                                                  *",
-				`*  Listening on http://localhost:${port}                           *`,
+				statusLine,
 				"*                                                                  *",
 				"********************************************************************",
 				"\n"
@@ -1352,7 +1373,7 @@ class ConnectorHttpServer extends ConnectorBase
 			
 		if (this.awi.editor)
 		{
-			await this.awi.editor.print(banner);
+			await this.awi.editor.print(banner, { user: 'awi', verbose: 4 });
 		}
 		else
 		{

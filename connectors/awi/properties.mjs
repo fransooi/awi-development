@@ -32,10 +32,19 @@ class ConnectorProperties extends ConnectorBase
 		this.version = '0.5';
 		this.propertiesPath = '';
 	}
+
+	// Helpers to access connectors
+	get configuration() { return this.awi.getConnector('configuration'); }
+	get system() { return this.awi.getConnector('system'); }
+	get files() { return this.awi.getConnector('files'); }
+	get utilities() { return this.awi.getConnector('utilities'); }
+
 	async connect( options )
 	{
 		super.connect( options );
-		this.propertiesPath = options.propertiesPath == 'root' ? this.awi.awi.thinknotes.propertiesPath : options.propertiesPath;
+		this.propertiesPath = options.propertiesPath == 'root' ? 
+			(this.configuration.getDataPath() + '/properties') : 
+			(options.propertiesPath || this.configuration.getDataPath() + '/properties');
 		return this.setConnected( true );
 	}
 	async registerEditor(args, basket, control)
@@ -64,7 +73,7 @@ class ConnectorProperties extends ConnectorBase
 	async createAccount( parameters, basket, control )
 	{
 		var propertyPath = this.propertiesPath + '/' + parameters.userName;
-		return await this.awi.files.createDirectories( propertyPath );
+		return await this.files.createDirectories( propertyPath );
 	}
 	parseMetadata( metadata, parent = {} )
 	{
@@ -73,7 +82,7 @@ class ConnectorProperties extends ConnectorBase
 			var option = metadata[m];
 			if ( option.type == 'group' )
 			{
-				if (this.awi.utilities.isObject(parent))
+				if (this.utilities.isObject(parent))
 					parent = {...parent, ...this.parseMetadata( option.data, parent )};
 				else {
 					parent.push( this.parseMetadata( option.data, {} ) );
@@ -97,11 +106,11 @@ class ConnectorProperties extends ConnectorBase
 	async command_getPropertiesList(parameters, message, editor)
 	{
 		var propertiesPath = this.propertiesPath + '/' + this.userName;
-		var answer = await this.awi.system.exists( propertiesPath );
+		var answer = await this.system.exists( propertiesPath );
 		if ( answer.isError() )
 			return this.replySuccess( this.newAnswer( [] ), message, editor );
 		var filter = parameters.filter ? parameters.filter : 'props_*.json';
-		answer = await this.awi.files.getDirectory( propertiesPath, { recursive: false, listFiles: true, listDirectories: false, filters: filter, noStats: true } );
+		answer = await this.files.getDirectory( propertiesPath, { recursive: false, listFiles: true, listDirectories: false, filters: filter, noStats: true } );
 		if ( answer.isError() )
 			return this.replyError( answer, message, editor );
 		var files = answer.data;
@@ -118,10 +127,10 @@ class ConnectorProperties extends ConnectorBase
 	async command_loadProperties(parameters, message, editor)
 	{
 		var propertyPath = this.propertiesPath + '/' + this.userName;
-		var answer = await this.awi.files.createDirectory( propertyPath );
+		var answer = await this.files.createDirectory( propertyPath );
 		if ( answer.isError() )
 			return this.replyError( answer, message, editor );
-		answer = await this.awi.files.loadJSON( propertyPath + '/props_' + parameters.name + '.json' );
+		answer = await this.files.loadJSON( propertyPath + '/props_' + parameters.name + '.json' );
 		if ( answer.isError() )
 			return this.replyError( answer, message, editor );
 		return this.replySuccess( this.newAnswer( answer.data ), message, editor );
@@ -129,24 +138,24 @@ class ConnectorProperties extends ConnectorBase
 	async command_saveProperties(parameters, message, editor)
 	{
 		var propertyPath = this.propertiesPath + '/' + this.userName;
-		var answer = await this.awi.files.createDirectory( propertyPath );
+		var answer = await this.files.createDirectory( propertyPath );
 		if ( answer.isError() )
 			return this.replyError( answer, message, editor );
-		answer = await this.awi.files.saveJSON( propertyPath + '/props_' + parameters.name + '.json', parameters.properties );
+		answer = await this.files.saveJSON( propertyPath + '/props_' + parameters.name + '.json', parameters.properties );
 		if ( answer.isError() )
 			return this.replyError( answer, message, editor );
 		return this.replySuccess( this.newAnswer( answer.data ), message, editor );
 	}
 	async command_deleteProperties(parameters, message, editor)
 	{
-		var answer = await this.awi.files.deleteFile( this.propertiesPath + '/' + this.userName + '/props_' + parameters.name + '.json' );
+		var answer = await this.files.deleteFile( this.propertiesPath + '/' + this.userName + '/props_' + parameters.name + '.json' );
 		if ( answer.isError() )
 			return this.replyError( answer, message, editor );
 		return this.replySuccess( this.newAnswer( answer.data ), message, editor );
 	}
 	async command_renameProperties(parameters, basket, control)
 	{
-		var answer = await this.awi.files.renameFile( this.propertiesPath + '/' + this.userName + '/props_' + parameters.name + '.json', this.propertiesPath + '/' + this.userName + '/props_' + parameters.newName + '.json' );
+		var answer = await this.files.renameFile( this.propertiesPath + '/' + this.userName + '/props_' + parameters.name + '.json', this.propertiesPath + '/' + this.userName + '/props_' + parameters.newName + '.json' );
 		if ( answer.isError() )
 			return this.replyError( answer, message, editor );
 		return this.replySuccess( this.newAnswer( answer.data ), message, editor );

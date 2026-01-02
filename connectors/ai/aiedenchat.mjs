@@ -29,7 +29,7 @@ class ConnectorAIChat extends ConnectorAIBase
 		this.name = 'Chat';
 		this.token = 'aichat';
 		this.group = 'ai';
-		this.classname = 'ConnectorAIChat';
+		this.className = 'ConnectorAIChat';
 		this.version = '0.5';
 		this.cancelled = false;
 		this.messageCount = 0;
@@ -41,10 +41,12 @@ class ConnectorAIChat extends ConnectorAIBase
 			n: 1,
 			frequency_penalty: 0,
 			presence_penalty: 0,
-			max_completion_tokens: 150,
+			max_completion_tokens: 1000,
 			//seed: 0,
 			aiKey: ''
 		}
+		this.history = [];
+		this.lastCallTime = 0;
 	}
 	async connect( options )
 	{
@@ -65,103 +67,132 @@ class ConnectorAIChat extends ConnectorAIBase
 	/////////////////////////////////////////////////////////////////////////
 	async generate( options )
 	{
+		// Auto-recover AI Key from configuration if missing
+		if ( !this.configuration.aiKey && this.awi.configuration.getUserKey() )
+			this.configuration.aiKey = this.awi.configuration.getUserKey();
+
 		if ( !this.configuration.aiKey )
-			return this.newError({ message: 'awi:ai-key-missing' });
+			return this.newError({ message: 'awi:ai-key-missing' }, { functionName: 'generate' });
 
 		const systemPrompt = options.system || '';
 		const userPrompt = options.prompt || '';
 		const requireJson = options.json || false;
+		const saveHistory = options.saveHistory || false;
+
+		// Rate limiting: Wait if calls are too frequent (min 2s interval)
+		const now = Date.now();
+		const minInterval = 2000;
+		const timeSinceLast = now - this.lastCallTime;
+		if (timeSinceLast < minInterval) {
+			const waitTime = minInterval - timeSinceLast;
+			await new Promise(resolve => setTimeout(resolve, waitTime));
+		}
+		this.lastCallTime = Date.now();
 
 		// Construct the effective prompt for EdenAI
-		// We use the 'openai' provider by default as it's reliable for instructions, 
-		// but this can be configured.
-		const provider = this.configuration.providers || 'openai';
-
+		// Use fallbacks by default: OpenAI, Google, Anthropic
+		const providersString = this.configuration.providers || 'openai,google,anthropic';
+		
 		const data = {
-			providers: provider,
+			providers: providersString,
 			text: userPrompt,
 			chatbot_global_action: systemPrompt,
-			previous_history: [], // No history for single-shot parsing
-			temperature: this.configuration.temperature || 0.1, // Low temp for logic
-			max_tokens: this.configuration.max_completion_tokens || 1000,
+			previous_history: saveHistory ? this.history : [], // Use history if requested
+			temperature: options.temperature || this.configuration.temperature || 0.1, // Low temp for logic
+			max_tokens: options.max_tokens || this.configuration.max_completion_tokens || 1000,
+			fallback_providers: '' // EdenAI uses the comma-separated providers list for fallbacks/simultaneous calls
 		};
 
-		// If json is requested, ensure the prompt explicitly asks for it (double check)
-		// though the parser already does this.
+		// console.log('DEBUG: AIChat Payload:', JSON.stringify(data, null, 2));
 
-		try {
-			const response = await axios.post('https://api.edenai.run/v2/text/chat', data, {
-				headers: {
-					'Authorization': 'Bearer ' + this.configuration.aiKey,
-					'Content-Type': 'application/json'
-				}
-			});
+		const maxRetries = 5;
+		let lastError = null;
 
-			if (response.data && response.data[provider]) {
-				const result = response.data[provider];
-				if (result.status === 'success' || result.generated_text) {
-					return result.generated_text;
+		for (let attempt = 0; attempt < maxRetries; attempt++) {
+			try {
+				if (attempt > 0) {
+					// Exponential backoff: 1s, 2s, 4s...
+					const backoff = 1000 * Math.pow(2, attempt - 1);
+					await new Promise(resolve => setTimeout(resolve, backoff));
 				}
+
+				const response = await axios.post('https://api.edenai.run/v2/text/chat', data, {
+					headers: {
+						'Authorization': 'Bearer ' + this.configuration.aiKey,
+						'Content-Type': 'application/json'
+					}
+				});
+
+				// Check providers in order
+				const providerList = providersString.split(',').map(p => p.trim());
+				
+				for (const provider of providerList) {
+					if (response.data && response.data[provider]) {
+						const result = response.data[provider];
+						if (result.status === 'success' || result.generated_text) {
+							if (saveHistory) {
+								this.history.push({ role: 'user', message: userPrompt });
+								this.history.push({ role: 'assistant', message: result.generated_text });
+							}
+							return result.generated_text;
+						}
+					}
+				}
+				
+				// If we get here, no provider succeeded in this response
+				lastError = { message: 'awi:ai-all-providers-failed', data: response.data };
+				// Continue to next retry attempt
+
+			} catch (error) {
+				lastError = { message: 'awi:ai-request-failed', data: error.message };
+				// Continue to next retry attempt
 			}
-			return this.newError({ message: 'awi:ai-provider-error', data: response.data });
-
-		} catch (error) {
-			return this.newError({ message: 'awi:ai-request-failed', data: error.message });
 		}
+
+		// Friendly error handling for AI refusal
+		if (lastError && lastError.message === 'awi:ai-all-providers-failed' && options.control) {
+			try {
+				options.control.editor.print('AI Debug: ' + JSON.stringify(lastError.data), { user: 'debug2', verbose: 4 });
+			} catch(e) {}
+
+			options.control.editor.print( 'AI Refusal: The request may have been rejected by the provider.', { user: 'warning' } );
+			options.control.editor.print( 'Hint: Using the names of living public figures often triggers safety filters.', { user: 'warning' } );
+			
+			// Return a silent error (no system log) so parser can fallback
+			const silentAnswer = this.newAnswer(lastError, null);
+			silentAnswer.setMessage(lastError.message);
+			silentAnswer.setError(lastError.message);
+			return silentAnswer;
+		}
+
+		return this.newError(lastError || { message: 'awi:ai-request-failed' }, { functionName: 'generate' });
 	}
 
 	async send( args, basket, control )
 	{
 		if ( !this.configuration.aiKey )
-			return this.newError({ message: 'awi:user-not-connected' });
+			return this.newError({ message: 'awi:user-not-connected' }, { functionName: 'send' });
 
 		var { prompt } = this.awi.getArgs( 'prompt', args, basket, [ '' ] );
 		prompt = prompt.trim();
-		var data =
-		{
-			temperature: this.configuration.temperature,
-			n: this.configuration.n,
-			max_completion_tokens: this.configuration.max_completion_tokens,
-			providers: this.configuration.providers,
-			text: prompt,
-			chatbot_global_action: basket.globalAction,
-			previous_history: basket.history
-		};
-		/*
-		var debug = this.awi.messages.format( `prompt: ~{text}~
-model: ~{providers}~
-temperature: ~{temperature}~
-max_tokens: ~{max_tokens}~`, data );
-		control.editor.print( debug.split( '\n' ), { user: 'information' } );
-		*/
-		return this.newAnswer( 'AI Chat not implemented yet.', 'awi:chat-answer' );
-		/*
-		var answer;
-		var self = this;
-		var options = {
-			method: 'POST',
-			url: 'https://api.edenai.run/v2/text/chat',
-			headers: {
-				accept: 'application/json',
-				'content-type': 'application/json',
-				authorization: 'Bearer ' + this.configuration.aiKey
-			},
-			data: data
-		};
-
-		axios.request( options )
-			.then( function( response )
-			{
-				answer = self.newAnswer( response.data[ data.providers ].generated_text, 'awi:chat-answer' );
-			} )
-			.catch( function( err )
-			{
-				answer = self.newError( err );
-			} );
-
-		while( !answer )
-			await new Promise( resolve => setTimeout( resolve, 1 ) );
-		return answer;
-		*/
+		
+		// Use generate to handle the actual call
+		try {
+			var response = await this.generate({
+				prompt: prompt,
+				system: basket.globalAction || 'You are a helpful assistant.',
+				json: false,
+				saveHistory: true,
+				control: control
+			});
+			
+			if (response && response.isError && response.isError()) {
+				return response;
+			}
+			
+			return this.newAnswer( response, 'awi:chat-answer' );
+		} catch (e) {
+			return this.newError({ message: 'awi:chat-failed', data: e.message }, { functionName: 'send' });
+		}
 	}
 }

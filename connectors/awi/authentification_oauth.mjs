@@ -91,7 +91,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		text += '- Last name: ' + parameters.accountInfo.lastName + '\n';
 		text += '- Country: ' + parameters.accountInfo.country + '\n';
 		text += '- Language: ' + parameters.accountInfo.language + '\n';
-		this.awi.editor.print( text, { user: 'awi', newLine: true, prompt: false } );
+		this.awi.editor.print( text, { user: 'awi', newLine: true, prompt: false, verbose: 4 } );
 
 		// Create a new default user config and merge the provided info
 		console.log('[AUTH-OAUTH] createAccount - creating config object...');
@@ -253,7 +253,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 			{
 			console.log('[AUTH-OAUTH] loginAccount - NO CONFIG FOUND, error:', configAnswer.isError() ? JSON.stringify(configAnswer.error) : 'NO_VALUE');
 			var text = 'Login account -> failed (' + user.email + ')\n';
-			this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false });
+			this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false, verbose: 4 });
 
 			// No config found, signal the client to create an account
 			return this.newError({ message: 'awi:account-not-found', data: user.email }, { functionName: 'loginAccount' });
@@ -271,7 +271,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 			key: crypto.randomBytes(64).toString('hex') // Session key
 		});
 		var text = 'Login account -> success (' + user.email + ', ' + userConfig.awiName + ')\n';
-		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false });
+		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false, verbose: 4 });
 
 		try
 		{
@@ -294,7 +294,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		if (bearer) validation = await this._validateAndCacheToken(bearer);
 		// Even if invalid, proceed to clear any local session by provided userName if possible
 		var text = 'Logout account -> success (' + parameters.userName + ')\n';
-		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false });
+		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false, verbose: 4 });
 
 		if (validation.userId) {
 			this.activeSessions.delete(validation.userId);
@@ -313,7 +313,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		const validation = await this._validateAndCacheToken(bearer);
 		if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { functionName: 'getUserList' });
 		var text = 'Get user list -> success (' + parameters.userName + ')\n';
-		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false });
+		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false, verbose: 4 });
 
 		// Fetch all users from the database
 		const profilesAnswer = await this.awi.database.getAllUserProfiles();
@@ -351,7 +351,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		}
 		if (error) {
 			var text = 'Login Awi -> failed (' + parameters.awiName + ')';
-			awi.editor.print(text, { user: 'awi', newLine: true, prompt: false });
+			awi.editor.print(text, { user: 'awi', newLine: true, prompt: false, verbose: 4 });
 			return error;
 		}
 
@@ -361,7 +361,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 
 		session.loggedInAwi = true;
 		var text = 'Login Awi -> success (' + parameters.awiName + ')';
-		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false });
+		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false, verbose: 4 });
 		return this.newAnswer({ userName: parameters.awiName });
 	}
 	async logoutAwi( awi, parameters )
@@ -378,7 +378,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 			await awi.callConnectors(['setUser', '*', { userName: '', awiName: '', userId: session.userId }], {}, {});
 		}
 		var text = 'Logout Awi -> success (' + parameters.awiName + ')';
-		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false });
+		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false, verbose: 4 });
 		return this.newAnswer({ userName: parameters.awiName });
 	}
 	async disconnect( awi, parameters )
@@ -395,7 +395,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 			await awi.callConnectors(['setUser', '*', { userName: '', awiName: '', userId: session.userId }], {}, {});
 		}
 		var text = 'Disconnected -> success (' + parameters.userName + ')';
-		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false });
+		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false, verbose: 4 });
 		return this.newAnswer({ userName: parameters.userName });
 	}
 	async deleteAccount(parameters)
@@ -415,7 +415,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		if (delAnswer.isError()) 
 			return delAnswer;
 		var text = 'Delete account -> success (' + parameters.awiName + ')';
-		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false });
+		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false, verbose: 4 });
 		return this.newAnswer({ userName: parameters.awiName });
 	}
 	async getUserInfo(parameters)
@@ -431,7 +431,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 			return this.newError({ message: 'awi:account-not-found', data: parameters.awiName });
 		}
 		var text = 'Get user info -> success (' + parameters.awiName + ')';
-		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false });
+		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false, verbose: 4 });
 		// Return non-sensitive session info
 		return this.newAnswer({ accountInfo: {
 			userName: session.awiName,

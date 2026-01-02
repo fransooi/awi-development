@@ -123,12 +123,18 @@ class ConnectorConfiguration extends ConnectorBase
 	{
 		if ( id == 'user' )
 		{
-			id = this.userId;
-			if ( !id )
-				id = 'user';
+			if ( this.userId && this.userIdToConfig[ this.userId ] )
+				return this.userIdToConfig[ this.userId ];
+			return this.configs[ 'user' ];
 		}
 		else if ( id == 'persona' )
-			id = 'persona-' + this.configs[ this.userId ].persona;
+		{
+			const userConfig = this.getConfig( 'user' );
+			if ( userConfig )
+				id = 'persona-' + userConfig.persona;
+			else
+				id = 'persona-awi';
+		}
 		return this.configs[ id ];
 	}
 	getBasket( type )
@@ -272,6 +278,7 @@ class ConnectorConfiguration extends ConnectorBase
 			for (const key in this.configs )
 			{
 				const config = this.configs[key];
+				if (!config) continue;
 				if (config.userId) { // This is a main user config
 					await this.awi.database.updateUserConfig({ userId: config.userId, config: config });
 				} else if (key.startsWith('persona-')) {
@@ -389,36 +396,46 @@ class ConnectorConfiguration extends ConnectorBase
 		// These will update this.configs in place, which is now safe because 'system' exists.
 		await this.loadConfig( 'system' );
 		await this.loadConfig( 'user' );
-		await this.loadConfig( 'persona-think' );
+		await this.loadConfig( 'persona-awi' );
 
 		return this.newAnswer(this.configs);
 	}
 
 	getSystemConfigDefault() {
+		const RED = '\x1b[31m';
+		const GREEN = '\x1b[32m';
+		const BLUE = '\x1b[34m';
+		const CYAN = '\x1b[36m';
+		const WHITE = '\x1b[37m';
+		const RESET = '\x1b[0m';
+		
 		return {
 			prompts: {
-				user: '. ',
-				awi: '.[oo] ',
-				result: '.[..] ',
-				root: '.[oo] > ',
-				question: '.[??] ',
-				information: '.(oo) ',
-				command: '.> ',
-				warning: '.(OO) ',
-				error: '.(**) ',
-				code: '.{..} ',
-				debug: '.[??] ',
-				debug1: '.[??] ',
-				debug2: '.[??] ',
-				debug3: '.[??] ',
-				verbose: '.(oo) ',
-				verbose1: '.(oo) ',
-				verbose2: '.(oo) ',
-				verbose3: '.(oo) ',
+				user: WHITE + '.(<°) ',
+				awi: CYAN + '.(°°) ',
+				result: BLUE + '.(..) ',
+				information: BLUE + '.(oo) ',
+				info: BLUE + '.(oo) ',
+				question: WHITE + '.(?°) ',
+				command: RED + '.(>°) ',
+				root: CYAN + '.[oo] ',
+				warning: RED + '.(OO) ',
+				error: RED + '.(**) ',
+				success: GREEN + '.(ok) ',
+				code: BLUE + '.{..} ',
+				debug1: BLUE + '.[??] ',
+				debug2: BLUE + '.[??] ',
+				debug3: BLUE + '.[??] ',
+				verbose1: BLUE + '.(oo) ',
+				verbose2: BLUE + '.(oo) ',
+				verbose3: BLUE + '.[oo] ',
+				verbose4: BLUE + '.[??] ',
+				bubble: BLUE + '.(oo) ',
 			},
 			commands: {}
 		};
 	}
+
 	async loadConfig( type, callback )
 	{
 		if ( type == 'user' )
@@ -463,130 +480,83 @@ class ConnectorConfiguration extends ConnectorBase
 
 		if ( !this.configs[ type ] )
 		{
-			// Fallback: If it's a specific persona (e.g. 'persona-think') that wasn't found in DB,
-			// create a default one derived from the name.
-			if ( type.indexOf( 'persona-' ) == 0 )
+			if ( type == 'system' )
+			{
+				this.configs[ 'system' ] = this.getSystemConfigDefault();
+			}
+			else if ( type == 'user' )
 			{
 				this.configs[ type ] =
 				{
-					name: type.substring( 8 ),
-					token: type.substring( 8 ),
+					firstName: '',
+					lastName: '',
+					fullName: '',
+					awiName: 'User',
+					userName: '',
+					email:'',
+					country: '',
+					language: '',
+					persona: 'awi',
+					paths:{},
+					directConnection: true,
+					localServer: true,
+					aiKey: '',
+					isDegree: true,
+					fix: 3,
+					debug: 0,
+					developperMode: true,
+					verbose: 1,
+					justify: 160,
+					verbosePrompts:
+					{
+						verbose1: [],
+						verbose2: [ 'bubble', 'info', 'information' ],
+						verbose3: [],
+						verbose4: [ 'debug1', 'debug2', 'debug3' ]
+					},
+					debugPrompts:
+					{
+						debug1: [ 'bubble' ],
+						debug2: [ 'bubble', 'parser' ],
+						debug3: []
+					},
+				};
+			}
+			else if ( type.indexOf('persona-') == 0 )
+			{
+				const RED = '\x1b[31m';
+				const GREEN = '\x1b[32m';
+				const BLUE = '\x1b[34m';
+				const CYAN = '\x1b[36m';
+				const WHITE = '\x1b[37m';
+
+				this.configs[ type ] =
+				{
+					name: 'awi',
+					token: '',
 					temperature: 0.5,
 					prompts:
 					{
-						user: '',
-						awi: '.(°°) ',
-						result: '.(..) ',
-						information: '.(oo) ',
-						question: '?(°°)',
-						command: '>(°°)',
-						root: '.[oo] > ',
-						warning: '.(OO) ',
-						error: '.(**) ',
-						code: '.{..} ',
-						debug1: '.[??] ',
-						debug2: '.[??] ',
-						debug3: '.[??] ',
-						verbose1: '.(oo) ',
-						verbose2: '.(oo) ',
-						verbose3: '.[oo] ',
+						user: WHITE + '.(<°) ',
+						awi: CYAN + '.(°°) ',
+						result: BLUE + '.(..) ',
+						information: BLUE + '.(oo) ',
+						info: BLUE + '.(oo) ',
+						question: WHITE + '.(?°) ',
+						command: RED + '.(>°) ',
+						root: CYAN + '.[oo] ',
+						warning: RED + '.(OO) ',
+						error: RED + '.(**) ',
+						success: GREEN + '.(ok) ',
+						code: BLUE + '.{..} ',
+						debug1: BLUE + '.[??] ',
+						debug2: BLUE + '.[??] ',
+						debug3: BLUE + '.[??] ',
+						verbose1: BLUE + '.(oo) ',
+						verbose2: BLUE + '.(oo) ',
+						verbose3: BLUE + '.[oo] ',
 					}
 				};
-			}
-
-			switch ( type )
-			{
-				case 'system':
-					this.configs[ 'system' ] =
-					{
-						prompts:
-						{
-							user: '. ',
-							awi: '.[oo] ',
-							result: '.[..] ',
-							root: '.[oo] > ',
-							question: '.[??] ',
-							information: '.(oo) ',
-							command: '.> ',
-							warning: '.(OO) ',
-							error: '.(**) ',
-							code: '.{..} ',
-							debug: '.[??] ',
-							debug1: '.[??] ',
-							debug2: '.[??] ',
-							debug3: '.[??] ',
-							verbose: '.(oo) ',
-							verbose1: '.(oo) ',
-							verbose2: '.(oo) ',
-							verbose3: '.(oo) ',
-						},
-						commands:
-						{},
-					}
-					break;
-				case 'user':
-					this.configs[ type ] =
-					{
-						firstName: '',
-						lastName: '',
-						fullName: '',
-						awiName: '',
-						userName: '',
-						email:'',
-						country: '',
-						language: '',
-						persona: 'think',
-						paths:{},
-						directConnection: true,
-						localServer: true,
-						aiKey: '',
-						isDegree: true,
-						fix: 3,
-						debug: 0,
-						developperMode: true,
-						verbose: 0,
-						justify: 160,
-						verbosePrompts:
-						{
-							verbose1: [ 'importer1', 'memory1' ],
-							verbose2: [ 'importer2', 'memory2' ],
-							verbose3: [ 'importer3', 'memory3' ]
-						},
-						debugPrompts:
-						{
-							debug1: [ 'bubble' ],
-							debug2: [ 'bubble', 'parser' ],
-							debug3: [ 'all' ]
-						},
-					};
-					break;
-				case 'persona':
-					this.configs[ type ] =
-					{
-						name: 'think',
-						token: '',
-						temperature: 0.5,
-						prompts:
-						{
-							user: '',
-							awi: '.(°°) ',
-							result: '.(..) ',
-							information: '.(oo) ',
-							question: '?(°°) ',
-							command: '>(°°)',
-							root: '.[oo] > ',
-							warning: '.(OO) ',
-							error: '.(**) ',
-							code: '.{..} ',
-							debug1: '.[??] ',
-							debug2: '.[??] ',
-							debug3: '.[??] ',
-							verbose1: '.(oo) ',
-							verbose2: '.(oo) ',
-							verbose3: '.[oo] ',
-						}
-					};
-					break;
 			}
 		}
 		if ( callback )
@@ -633,73 +603,117 @@ class ConnectorConfiguration extends ConnectorBase
 		}
 		return paths;
 	}
-	getPrompt( type )
+	getPrompt( type, options = {} )
 	{
 		type = ( typeof type == 'undefined' ? 'awi' : type );
+		const RED = '\x1b[31m';
 
-		// Debug prompts
-		if ( type == 'systemwarning' )
-			return '* Warning: ';
-		if ( type == 'systemerror' )
-			return '* ERROR!';
-		if ( type.indexOf( 'debug' ) == 0 )
+		// 1. Hardcoded System Prompts (Always show, for critical internal errors)
+		if ( type == 'systemwarning' ) return RED + '.(OO) Warning: ';
+		if ( type == 'systemerror' ) return RED + '.(**) ERROR! ';
+		
+		var userConfig = (this.user && this.configs[this.user]) ? this.configs[this.user] : this.configs['user'];
+		var verboseLevel = userConfig ? userConfig.verbose : 1;
+		var debugLevel = userConfig ? userConfig.debug : 0;
+
+		// Check for verbose override in options
+		if ( typeof options.verbose != 'undefined' )
 		{
-			var level = parseInt( type.substring( 5 ) );
-			if ( level > 0 && level <= 3 )
+			// If options.verbose is higher or equal to the requirement, we might force it?
+			// Actually, the logic below checks if CURRENT level < REQUIRED level.
+			// The user request says: "if defined, use the given one instead of the default one."
+			// meaning use options.verbose as the 'current' verboseLevel for this check.
+			verboseLevel = options.verbose;
+		}
+
+		// 2. Check if this type is controlled by Verbosity Settings
+		if ( userConfig && userConfig.verbosePrompts )
+		{
+			// Find which level controls this type
+			var requiredVerboseLevel = 0;
+			for ( var v = 1; v <= 4; v++ )
 			{
-				if ( level <= userConfig.debug )
+				if ( userConfig.verbosePrompts['verbose' + v] && userConfig.verbosePrompts['verbose' + v].includes(type) )
 				{
-					return this.configs[ 'system' ].prompts[ type ];
+					requiredVerboseLevel = v;
+					break;
+				}
+			}
+
+			// If it is controlled
+			if ( requiredVerboseLevel > 0 )
+			{
+				// If current level is too low, hide it
+				if ( verboseLevel < requiredVerboseLevel ) {
+					return null;
 				}
 			}
 		}
 		
-		// Safety check: if system config is missing (e.g. during boot/setup), return default
-		if ( !this.configs.system || !this.configs.system.prompts )
-			return '.[oo] > ';
-
-		var prompt = this.configs.system.prompts[ type ];
-		if ( prompt  )
-			return prompt;
-
-		if ( this.user )
+		// 3. Check if this type is controlled by Debug Settings
+		// Handle 'debugN' types specifically
+		if ( type.indexOf( 'debug' ) == 0 )
 		{
-			// Try main prompts
-			var userConfig = this.configs[ this.user ];
-			if ( !userConfig )
-				return '(oo)';
-			var config = this.configs[ 'persona-' + userConfig.persona ];
-			if ( config && config.prompts[ type ] )
-				return config.prompts[ type ];
-			return '(oo)';
-
-			if ( !this.configs[ type ] )
+			// If verbose override is 4 (Debug), always show debug messages
+			if ( verboseLevel >= 4 )
 			{
-				for ( var v = userConfig.verbose; v >= 1; v-- )
+				// Allowed
+			}
+			else
+			{
+				var level = parseInt( type.substring( 5 ) );
+				// If it's literally "debug1", "debug2", etc.
+				if ( !isNaN(level) )
 				{
-					var found = userConfig.verbosePrompts[ 'verbose' + v ].find(
-						function( element )
-						{
-							return element == type;
-						} );
-					if ( found )
-						return config.prompts[ 'verbose' + v ];
+					if ( debugLevel >= level )
+					{
+						// Allowed, proceed to fetch string
+					}
+					else
+					{
+						return null;
+					}
 				}
-
-				if ( userConfig.debug > 0 )
-				{
-					var found = userConfig.debugPrompts[ 'debug' + userConfig.debug ].find(
-						function( element )
-						{
-							return element == 'all' || element == type;
-						} );
-					if ( found )
-						return this.configs[ 'system' ].prompts[ 'debug' + userConfig.debug ];
-				}
-				return null;
 			}
 		}
-		return '-OO-';
+		// Check debugPrompts list for non-debugN names
+		if ( userConfig && userConfig.debugPrompts )
+		{
+			var requiredDebugLevel = 0;
+			for ( var d = 1; d <= 3; d++ )
+			{
+				if ( userConfig.debugPrompts['debug' + d] && 
+					 (userConfig.debugPrompts['debug' + d].includes(type) || userConfig.debugPrompts['debug' + d].includes('all')) )
+				{
+					requiredDebugLevel = d;
+					break;
+				}
+			}
+			if ( requiredDebugLevel > 0 )
+			{
+				if ( debugLevel < requiredDebugLevel ) {
+					return null;
+				}
+			}
+		}
+
+		// 4. Retrieve Prompt String (Persona Override -> System Default)
+		// If we reached here, it means we are allowed to show it (or it's not restricted).
+
+		// Persona Override
+		if ( this.user && this.configs[ this.user ] )
+		{
+			var config = this.configs[ 'persona-' + userConfig.persona ];
+			if ( config && config.prompts && config.prompts[ type ] )
+				return config.prompts[ type ];
+		}
+
+		// System Standard
+		if ( this.configs.system && this.configs.system.prompts && this.configs.system.prompts[type] )
+			return this.configs.system.prompts[type];
+
+		// 5. Not found -> Hide
+		return RED + '.(BUG!) ';
 	}
 	getConfigTypes( type )
 	{
@@ -739,7 +753,10 @@ class ConnectorConfiguration extends ConnectorBase
 	}
 	setVerbose( verbose )
 	{
-		this.getConfig( 'user' ).verbose = Math.max( Math.min( 3, verbose ), 1 );
+		const config = this.getConfig( 'user' );
+		if (config) {
+			config.verbose = Math.max( Math.min( 4, verbose ), 1 );
+		}
 	}
 	getSystem()
 	{
@@ -761,6 +778,7 @@ class ConnectorConfiguration extends ConnectorBase
 	// Exposed functions
 	async setUser( args, basket, control )
 	{
+		if (control && control.editor) control.editor.print('Configuration: setUser called...', { user: 'debug1', verbose: 4 });
 		var { userName, userId } = this.awi.getArgs( [ 'userName', 'userId' ], args, basket, [ '', null ] );
 		userName = userName.trim();
 		if (!userName)
@@ -785,7 +803,9 @@ class ConnectorConfiguration extends ConnectorBase
 		}
 		if ( config )
 		{
+			if (control && control.editor) control.editor.print('Configuration: User config found, loading persona...', { user: 'debug1', verbose: 4 });
 			var persona = await this.loadConfig( 'persona-' + config.persona );
+			if (control && control.editor) control.editor.print('Configuration: Persona loaded.', { user: 'debug1', verbose: 4 });
 			return this.newAnswer( {
 				configuration: {
 					config: config,
@@ -794,5 +814,7 @@ class ConnectorConfiguration extends ConnectorBase
 			}
 			);
 		}
+		if (control && control.editor) control.editor.print('Configuration: User config NOT found.', { user: 'debug1', verbose: 4 });
+		return this.newError( { message: 'awi:user-config-not-found', data: userName } );
 	}
 }

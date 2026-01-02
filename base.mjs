@@ -75,6 +75,7 @@ export default class Base
 			className: this.className,
 			version: this.version,
 			functionName: functionName,
+			msg: message,
 			...logData
 		};
 		// Merge extra data if provided (e.g. payload from API calls)

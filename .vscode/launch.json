@@ -11,6 +11,7 @@
         "skipFiles": [
             "<node_internals>/**"
         ],
+        "cwd": "${workspaceFolder}",
         "runtimeArgs": ["--preserve-symlinks"],
         "console": "integratedTerminal",
         "outputCapture": "std",

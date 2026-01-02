@@ -1,0 +1,19 @@
+#!/usr/bin/expect -f
+
+set timeout 30
+
+# Start the AWI server
+spawn node mac_node_prompt.mjs
+
+# Wait for the initial prompt
+expect -re {.*?\? }
+
+# Send "Hello?" which currently triggers AI error and crash
+send "Hello?\r"
+
+# Expect the prompt back (graceful handling) instead of crash
+expect -re {.*?\? }
+
+# Quit
+send "quit\r"
+expect eof

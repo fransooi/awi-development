@@ -27,7 +27,7 @@ export default class ConnectorAIBase extends ConnectorBase
 		this.name = 'Ai Base';
 		this.token = 'aibase';
 		this.group = 'ai';
-		this.classname = 'ConnectorAIBase';
+		this.className = 'ConnectorAIBase';
 		this.version = '0.5';
 		this.user = '';
 		this.configuration = {};
@@ -71,6 +71,11 @@ export default class ConnectorAIBase extends ConnectorBase
 		{
 			this.awiName = awiName;
 			this.user = userName;
+
+			// Sync AI Key if present in user config
+			if (this.awi.configuration.getConfig(userName).aiKey) {
+				this.configuration.aiKey = this.awi.configuration.getConfig(userName).aiKey;
+			}
 		}
 		return this.newAnswer( true );
 	}

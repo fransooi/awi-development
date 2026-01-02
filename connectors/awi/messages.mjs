@@ -168,11 +168,63 @@ class ConnectorMessages extends ConnectorBase
 		return '' + number;
 	}
 
+	formatError( error )
+	{
+		if ( typeof error == 'string' )
+			return error;
+		
+		let msg = error.msg || error.message || 'Unknown Error';
+		let data = error.data;
+
+		// Map specific error codes to friendly messages
+		const errorMap = {
+			'awi:ai-all-providers-failed': 'The AI provider refused the request or is unavailable.',
+			'awi:ai-request-failed': 'Failed to communicate with the AI service.',
+			'awi:user-not-connected': 'No user is currently connected.',
+			'awi:procedure-not-found': 'The requested procedure could not be found.',
+			'awi:procedure-step-failed': 'A step in the procedure failed to execute.'
+		};
+
+		if ( errorMap[ msg ] )
+			msg = errorMap[ msg ];
+
+		// Append data if useful and simple
+		if ( data )
+		{
+			if ( typeof data === 'string' )
+				msg += ' (' + data + ')';
+			else if ( typeof data === 'object' && Object.keys(data).length > 0 )
+			{
+				// Avoid dumping huge objects
+				try {
+					const str = JSON.stringify(data);
+					if ( str.length < 100 ) msg += ' ' + str;
+				} catch(e) {}
+			}
+		}
+
+		return msg;
+	}
+
 	// Exposed functions
 	async computeResponse( args, basket, control )
 	{
 		// Get rid of empty lines.
 		var { response } = this.awi.getArgs( [ 'response' ], args, basket, [ '' ] );
+		
+		if ( typeof response != 'string' )
+		{
+			if ( response && typeof response === 'object' )
+			{
+				if ( response.toString && response.toString() !== '[object Object]' )
+					response = response.toString();
+				else
+					try { response = JSON.stringify( response ); } catch(e) { response = ''; }
+			}
+			else
+				response = String( response || '' );
+		}
+			
 		var lines = response.trim().split( '\n' );
 		var newResponse = '';
 		for ( var l = 0; l < lines.length; l++ )
@@ -200,7 +252,7 @@ class ConnectorMessages extends ConnectorBase
 				response = response.substring( 0, pos ) + response.substring( pos + user.name.length + 1 ).trim();
 		}
 
-		return this.newAnswer( response );
+		return this.newAnswer( { response: response } );
 /*
 		// Replace tokens with messages
 		var start = text.indexOf( '<awi>' );

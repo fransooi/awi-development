@@ -53,7 +53,7 @@ class BubbleSetup extends BubbleBase
 			'  I will help you configure your database connection.',
 			'  You need a Supabase project URL and Secret Key.',
 			''
-		], { user: 'awi' } );
+		], { user: 'awi', verbose: 4 } );
 
 		// 1. Get Credentials
 		const inputs = [
@@ -71,7 +71,7 @@ class BubbleSetup extends BubbleBase
 		const key = data.key.result.trim();
 
 		// 2. Test Connection
-		control.editor.print( 'Testing connection...', { user: 'awi' } );
+		control.editor.print( 'Testing connection...', { user: 'awi', verbose: 4 } );
 		
 		// Temporarily set for this session
 		process.env.SUPABASE_URL = url;
@@ -83,12 +83,12 @@ class BubbleSetup extends BubbleBase
 			const connectResult = await this.awi.database.connect({ url, secretKey: key });
 			if ( connectResult.isError() || !this.awi.database.supabase )
 			{
-				control.editor.print( 'Connection failed! Please check your keys.', { user: 'error' } );
+				control.editor.print( 'Connection failed! Please check your keys.', { user: 'error', verbose: 4 } );
 				return this.newError( { message: 'setup:connection-failed' } );
 			}
 		}
 
-		control.editor.print( 'Connection successful!', { user: 'success' } );
+		control.editor.print( 'Connection successful!', { user: 'success', verbose: 4 } );
 
 		// 3. Save to .env
 		// We always use .env in the root.
@@ -98,7 +98,7 @@ class BubbleSetup extends BubbleBase
 		
 		const envPath = path.join(rootDir, targetEnv);
 		
-		control.editor.print( `Saving configuration to ${targetEnv}...`, { user: 'awi' } );
+		control.editor.print( `Saving configuration to ${targetEnv}...`, { user: 'awi', verbose: 4 } );
 
 		try
 		{
@@ -127,12 +127,12 @@ class BubbleSetup extends BubbleBase
 			if (!keyFound) newLines.push(`SUPABASE_SECRET_KEY=${key}`);
 
 			fs.writeFileSync(envPath, newLines.join('\n'), 'utf8');
-			control.editor.print( 'Configuration saved.', { user: 'success' } );
+			control.editor.print( 'Configuration saved.', { user: 'success', verbose: 4 } );
 		}
 		catch(e)
 		{
-			control.editor.print( `Could not write to ${targetEnv}: ${e.message}`, { user: 'error' } );
-			control.editor.print( 'Please manually update your .env file.', { user: 'warning' } );
+			control.editor.print( `Could not write to ${targetEnv}: ${e.message}`, { user: 'error', verbose: 4 } );
+			control.editor.print( 'Please manually update your .env file.', { user: 'warning', verbose: 4 } );
 		}
 
 		return this.newAnswer( { success: true }, 'setup:complete' );

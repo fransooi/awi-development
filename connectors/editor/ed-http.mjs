@@ -115,44 +115,10 @@ class EdHttp extends EdNetwork
         return this.replyError(this.newError({ message: 'awi:user-not-allowed', data: session.data.awiName }, { functionName: 'onMessage' }), message);
       //////////////////////////////////////////////////////////////////////////
 
-			var text = new Date().toISOString() + '\nCOMMAND: "' + message.command + '" from user: ' + message.parameters.userName;
-			var parameters = '';
-      /*
-			for ( var key in message.parameters )
-			{
-				try
-				{
-					parameters += '.        ' + key + ': ' + message.parameters[ key ].toString().substring( 0, 60 ) + ', \n';
-				}
-				catch (e)
-				{
-				}
-			}
-			if ( parameters )
-				text += '\n' + parameters;
-      */
-			if ( this[ 'command_' + message.command ] )
-			{
-				this.awi.editor.print( text, { user: 'awi' } );
-				return this[ 'command_' + message.command ]( message.parameters, message );
-			}
-			else
-			{
-				this.awi.editor.print( text, { user: 'awi' } );
-				var column = message.command.indexOf( ':' );
-				if ( column > 0 )
-				{
-					var connector = message.command.substring( 0, column );
-					if ( this.connectors[ connector ] )
-					{
-						var command = message.command.substring( column + 1 );
-						if ( this.connectors[ connector ].commands[ command ] )
-							return this.connectors[ connector ].commands[ command ]( message.parameters, message, this );
-						return this.replyError( this.newError( { message: 'awi:command-not-found', data: parameters.command }, { functionName: 'onMessage' } ), message );
-					}
-				}
-			}
-			return this.replyError( this.newError( { message: 'awi:command-not-found', data: parameters.command }, { functionName: 'onMessage' } ), message );
+			var answer = await this.dispatchMessage( message );
+			if ( answer.isError() )
+				return this.replyError( answer, message );
+			return answer;
 		}
 		catch( e )
 		{

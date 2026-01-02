@@ -76,20 +76,23 @@ export default class Awi extends Base
 			// A filter?
 			if ( name.indexOf( '*' ) >= 0 || name.indexOf( '?' ) >= 0 )
 			{
-				var path = self.system.getEnginePath() + '/' + type + '/' + group;
+				var path = options.modulePath ? options.modulePath : (self.system.getEnginePath() + '/' + type + '/' + group);
 				var answer = await self.files.getDirectory( path, { filters: name + '.mjs', listFiles: true, recursive: false, sorted: true } );
 				if ( answer.isSuccess() )
 				{
 					var fileList = answer.getValue();
 					for ( var f = 0; f < fileList.length; f++ )
 					{
-						await createBubble( type, group, self.system.basename( fileList[ f ].name, '.mjs' ), element.config, element.options );
+						var fileOptions = Object.assign( {}, options );
+						if ( options.modulePath )
+							fileOptions.modulePath = path + '/' + fileList[ f ].name;
+						await createBubble( type, group, self.system.basename( fileList[ f ].name, '.mjs' ), config, fileOptions );
 					}
 				}
 			}
 			else
 			{
-				await createBubble( type, group, name, element.config, element.options );
+				await createBubble( type, group, name, config, options );
 			}
 		}
 		async function createBubble( type, group, name, config = {}, options = {} )
@@ -98,11 +101,14 @@ export default class Awi extends Base
 			idCheck[ config.key ] = true;
 			var text = type + '-' + group + '-' + name;
 			self.log( 'Loading ' + text, { level: 'info' } );
-			var exports = await import( './' + type + '/' + group + '/' + name + '.mjs' );
+			var importPath = options.modulePath ? options.modulePath : ('./' + type + '/' + group + '/' + name + '.mjs');
+			var exports = await import( importPath );
 			var newClass = new exports.Bubble( self, config );
 			if ( newClass )
 			{
 				self.classes[ type ][ group ][ name ] = exports;
+				if ( newClass.token )
+					self.classes[ type ][ group ][ newClass.token ] = exports;
 				self[ type ][ config.key ] = newClass;
 				if ( newClass.connect )
 					await newClass.connect( self, options );
@@ -135,7 +141,7 @@ export default class Awi extends Base
 			this.bubbleGroups[ bubble.group ][ bubble.token ] = bubble;
 		}
 		// Connect editors
-		if ( this.editor.connected )
+		if ( this.editor && this.editor.connected )
 			this.editor.connectEditors();
 		// Is everyone connected?
 		var answer;
@@ -184,7 +190,8 @@ export default class Awi extends Base
 		this.log( 'Loading ' + text, { level: 'info' } );
 		try
 		{
-			var exports = await import( './connectors/' + group + '/' + n + '.mjs' );
+			var importPath = options.modulePath ? options.modulePath : ('./connectors/' + group + '/' + n + '.mjs');
+			var exports = await import( importPath );
 			var newClass = new exports.Connector( this, config );
 			if ( newClass )
 			{
@@ -250,17 +257,29 @@ export default class Awi extends Base
 			var value = defaults[ n ];
 			if ( args.length > n )
 				value = args[ n ];
-			else if ( typeof basket[ name ] != 'undefined' )
-				value = basket[ name ];
 			else if ( typeof argsObject[ name ] != 'undefined' )
 				value = argsObject[ name ];
+			else if ( typeof basket[ name ] != 'undefined' )
+				value = basket[ name ];
 			result[ name ] = value;
 		}
 		return result;
 	}
+	getConnector( token )
+	{
+		// 1. Look in current instance
+		if ( this[ token ] )
+			return this[ token ];
+		
+		// 2. Delegate to parent if it exists and is not self
+		if ( this.awi && this.awi !== this )
+			return this.awi.getConnector( token );
+
+		return null;
+	}
 	getConnectorByToken( token )
 	{
-		return this[ token ];
+		return this.getConnector( token );
 	}
 	async callParentConnector( name, functionName, argsIn )
 	{

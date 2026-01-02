@@ -64,17 +64,31 @@ class ConnectorPrompt extends ConnectorBase
 	}
 	async prompt( args, basket, control )
 	{
-		control.promptOn = ( typeof control.promptOn == 'undefined' ? 0 : control.promptOn );
-		if ( control.promptOn )
-			return this.awi.BUSY;
-		control.promptOn++;
+		var { prompt, recursive } = this.awi.getArgs( [ 'prompt', 'recursive' ], args, basket, [ '', false ] );
+		
+		// Fix: Only get tokens from args, NEVER from basket (avoid stale tokens from recursion)
+		// AND only if args is an object (to avoid re-consuming a string prompt as tokens)
+		var tokens = null;
+		if ( typeof args === 'object' && args !== null && !Array.isArray(args) )
+		{
+			var t = this.awi.getArgs( [ 'tokens' ], args, {}, [ null ] );
+			tokens = t.tokens;
+		}
 
-		var { prompt } = this.awi.getArgs( [ 'prompt' ], args, basket, [ '' ] );
+		control.promptOn = ( typeof control.promptOn == 'undefined' ? 0 : control.promptOn );
+		if ( control.promptOn && !recursive )
+			return this.newError( { message: 'awi:busy' } );
+		control.promptOn++;
 		
 		// Allow system commands to bypass login check
 		const bypassCommands = ['setup', 'help', 'quit', 'exit'];
 		const firstWord = prompt.split(' ')[0].toLowerCase().trim();
 		const isBypass = bypassCommands.includes(firstWord) || prompt.trim().startsWith('awi.setup');
+		
+		if ( firstWord == 'quit' || firstWord == 'exit' )
+		{
+			prompt = 'awi.quit()';
+		}
 
 		if ( !isBypass && !this.awi.configuration.isUserLogged() )
 		{
@@ -157,24 +171,71 @@ class ConnectorPrompt extends ConnectorBase
 			return this.newAnswer();
 		}
 
-		var answer = await this.awi.callConnectors( [ 'preparePrompt', '*', { prompt: prompt } ], basket, control );
+		var answer;
+		if ( tokens )
+		{
+			answer = this.newAnswer( { tokens: tokens } );
+		}
+		else
+		{
+			answer = await this.awi.callConnectors( [ 'preparePrompt', '*', { prompt: prompt } ], basket, control );
+		}
+
 		if ( answer.isSuccess() )
 		{
-			this.branch.addTokens( { command: answer.data.tokens, list: 'up' }, basket, control );
-			answer = await this.branch.runTokens( { list: 'up', from: 'last', args: {} }, basket, control );
+			this.branch.addTokens( { tokens: answer.data.tokens, list: 'up' }, basket, control );
+			answer = await this.branch.runTokens( { list: 'up', from: 'last', args: {}, silent: true }, basket, control );
 			if ( answer.isSuccess() )
 			{
-				answer = await this.awi.callConnectors( [ 'computeResponse', '*', { response: answer.response } ], basket, control );
+				answer = await this.awi.callConnectors( [ 'computeResponse', '*', { response: answer.getValue() } ], basket, control );
 				if ( answer.isSuccess() )
 				{
 					var response = answer.data.response;
+					if ( typeof response != 'string' )
+						response = response ? String( response ) : '';
 					if ( response )
-						control.editor.print( answer.response.split( '\n' ), { user: 'awi', newLine: true, prompt: false } );
+						control.editor.print( response.split( '\n' ), { user: 'awi', newLine: true, prompt: false } );
+				}
+				else
+				{
+					// computeResponse failed
+					var errorMsg = this.awi.messages && this.awi.messages.formatError ? 
+						this.awi.messages.formatError( answer.error ) : 
+						(answer.error ? answer.error.message : 'Unknown Error');
+					control.editor.print( 'Response Error: ' + errorMsg, { user: 'error' } );
 				}
 			}
+			else
+			{
+				// runTokens failed (e.g. bubble not found)
+				var errorMsg = this.awi.messages && this.awi.messages.formatError ? 
+					this.awi.messages.formatError( answer.error ) : 
+					(answer.error ? answer.error.message : 'Unknown Error');
+				control.editor.print( 'Execution Error: ' + errorMsg, { user: 'error' } );
+			}
 		}
-		control.editor.waitForInput( );
+		else
+		{
+			// Error in preparation (e.g. Parser failed)
+			var errorMsg = this.awi.messages && this.awi.messages.formatError ? 
+				this.awi.messages.formatError( answer.error ) : 
+				(answer.error ? answer.error.message : 'Unknown Error');
+				
+			control.editor.print( 'Prompt Error: ' + errorMsg, { user: 'error' } );
+		}
+		
+		if ( !recursive )
+		{
+			var userConfig = this.awi.configuration.getConfig('user');
+			var name = userConfig && userConfig.awiName ? userConfig.awiName : this.awi.configuration.getUser();
+			control.editor.setPrompt( '.(' + ( name ? name : 'user' ) + ') ? ' );
+			control.editor.waitForInput( );
+		}
 		control.promptOn--;
+		if ( !answer ) {
+			control.editor.print( 'Prompt DEBUG: returning undefined answer! Creating default.', { user: 'error', verbose: 4 } );
+			return this.newAnswer({ processed: true });
+		}
 		return answer;
 	}
 	async getParameters( argsIn, basket = {}, control = {} )

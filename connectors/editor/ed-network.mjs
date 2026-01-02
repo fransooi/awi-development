@@ -62,6 +62,38 @@ export default class EdNetwork extends EdBase
 		return this.newAnswer( true );
 	}
 
+	async dispatchMessage( message )
+	{
+		// Common logging
+		var userName = (message.parameters && message.parameters.userName) ? message.parameters.userName : 'unknown';
+		var text = 'COMMAND: "' + message.command + '" from user: ' + userName;
+		this.awi.editor.print( text, { user: 'awi' } );
+
+		// 1. Internal command
+		if ( this[ 'command_' + message.command ] )
+		{
+			return this[ 'command_' + message.command ]( message.parameters, message );
+		}
+
+		// 2. Connector command
+		var column = message.command.indexOf( ':' );
+		if ( column > 0 )
+		{
+			var connectorToken = message.command.substring( 0, column );
+			// Check if connector is registered for this editor
+			if ( this.connectors && this.connectors[ connectorToken ] )
+			{
+				var commandName = message.command.substring( column + 1 );
+				if ( this.connectors[ connectorToken ].commands[ commandName ] )
+				{
+					return this.connectors[ connectorToken ].commands[ commandName ]( message.parameters, message, this );
+				}
+			}
+		}
+
+		return this.newError( { message: 'awi:command-not-found', data: message.command } );
+	}
+
 	// AWI commands
 	async command_prompt( parameters, message )
 	{

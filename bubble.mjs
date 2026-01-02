@@ -65,6 +65,11 @@ export default class BubbleBase extends Base
 				for ( var e in config.exits )
 					this.properties.exits[ e ] = config.exits[ e ];
 			}
+			// Allow overriding inputs/outputs from config
+			if ( config.inputs )
+				this.properties.inputs = awi.utilities.convertPropertiesToParams( config.inputs );
+			if ( config.outputs )
+				this.properties.outputs = awi.utilities.convertPropertiesToParams( config.outputs );
 		}
 	}
 	reset()
@@ -114,7 +119,28 @@ export default class BubbleBase extends Base
 		for ( var i = 0; i < this.properties.inputs.length; i++ )
 		{
 			var input = this.properties.inputs[ i ];
-			control.editor.print( [ 'Parameter ' + input.name + ': ' + args[ input.name ].result ], { user: 'bubble' } );
+			if ( args[ input.name ] )
+			{
+				var val = args[ input.name ];
+				if ( val && typeof val.getValue === 'function' )
+					val = val.getValue();
+				else if ( val && typeof val === 'object' && (val.data !== undefined || val.value !== undefined || val.result !== undefined) )
+					val = val.data !== undefined ? val.data : (val.value !== undefined ? val.value : val.result);
+
+				// Handle object wrappers or direct values
+				if ( typeof val === 'object' && val !== null ) {
+					try {
+						val = JSON.stringify(val);
+					} catch (e) {
+						val = "[Complex Object: " + (val.constructor ? val.constructor.name : typeof val) + "]";
+					}
+				}
+				// Truncate long values to avoid spamming console
+				if ( typeof val === 'string' && val.length > 200 )
+					val = val.substring( 0, 200 ) + '... [truncated]';
+
+				control.editor.print( [ 'Parameter ' + input.name + ': ' + val ], { user: 'bubble' } );
+			}
 		}
 	}
 	async playback( args, basket, control )

@@ -32,86 +32,41 @@ export default class ConnectorPersona extends ConnectorBase
 		this.version = '0.5';
 
 		this.persona = '';
-		this.personaDefault = {
-			name: 'Think',
-			character: 'think',
-			animations: false,
-			system: {
-				start: [],
-				middle: [],
-				end: []
-			},
-			assistant: {},
-			user: {},
-			temperature: 0.1,
-			prompts:
-			{
-				user: '',
-				awi: '.(°°) ',
-				result: '.(..) ',
-				information: '.(oo) ',
-				question: '?(°°) ',
-				command: '>(°°)',
-				root: '.[oo] ',
-				warning: '.(OO) ',
-				error: '.(**) ',
-				code: '.{..} ',
-				debug1: '.[??] ',
-				debug2: '.[??] ',
-				debug3: '.[??] ',
-				verbose1: '.(oo) ',
-				verbose2: '.(oo) ',
-				verbose3: '.[oo] ',
-			}
-		};
-		this.defaultPersonalities = {
-			think: {
-				name: 'Think',
-				token: 'think',
-				temperature: 0.1,
-				system: {
-					start: [
-						'The goal of this conversation is to help the authors of this application to create it.',
-					],
-				},
-				assistant: {
-					start: [
-						'Your name is Think. You are a good assistant that knows a lot about technology and computers.',
-						'You are a smart assistant, specialized in software developement and AI.',
-						'You are are currently in the middle of the developement of a new AI-driven phone application, named "Think Notes".',
-						'This application is developped in Expo React Native for the phone version, Vite.js for web, node.js for server.',
-						'You are here to help the authors of this application to create it, Richard Vanner is the project manager, Francois Lionet is the programmer.',
-					],
-				},
-				user: {
-					start: [],
-				},
-			},
-		}
+		this.personaToken = '';
 	}
 	connect( options )
 	{
 		super.connect( options );
 		return this.setConnected( true );
 	}
-	setPersona( args, basket, control )
+	async loadPersonaFromFile( token )
+	{
+		var path = this.awi.configuration.getDataPath() + '/personalities/' + token + '.hjson';
+		var answer = await this.awi.files.loadHJSON( path );
+		if ( answer.isSuccess() )
+			return answer.getValue();
+		return null;
+	}
+	async setPersona( args, basket, control )
 	{
 		var { token } = this.awi.getArgs( 'token', args, basket, [ '' ] );
 		var persona;
-		if ( token != this.personaToken )
+		if ( token != this.personaToken || !this.persona )
 		{
-			persona = this.awi.configuration.getPersona( 'user' );
-			if ( persona )
+			persona = this.awi.configuration.getPersona( token );
+			if ( !persona || !persona.name )
 			{
-				if ( persona.name == '' )
+				persona = await this.loadPersonaFromFile( token );
+				if ( persona )
 				{
-					// If default, create it!
-					if ( !this.defaultPersonalities[ token ] )
-						return this.newError( { message: 'awi:persona-not-found', data: token } );
-					for ( var p in this.defaultPersonalities[ token ] )
-						persona[ p ] = this.defaultPersonalities[ token ][ p ];
+					this.awi.configuration.setPersona( token, persona );
 				}
-				this.awi.configuration.setPersona( token, persona );
+				else
+				{
+					if ( token != 'awi' )
+						return await this.setPersona( { token: 'awi' }, basket, control );
+					return this.newError( { message: 'awi:persona-not-found', data: token } );
+				}
 			}
 			this.personaToken = token;
 			this.persona = persona;
@@ -143,5 +98,9 @@ export default class ConnectorPersona extends ConnectorBase
 	{
 		var { response } = this.awi.getArgs( [ 'response' ], args, basket, [ '' ] );
 		return this.newAnswer( { response: response } );
+	}
+	async saveMemories( args, basket, control )
+	{
+		return this.newAnswer( true );
 	}
 }

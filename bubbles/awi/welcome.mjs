@@ -52,7 +52,7 @@ class BubbleWelcome extends BubbleBase
 
 		if ( !dbReady )
 		{
-			control.editor.print( 'Database not connected.', { user: 'warning' } );
+			control.editor.print( 'Database not connected.', { user: 'warning', verbose: 4 } );
 			
 			const setup = await this.awi.prompt.getParameters( {
 				list: [ { name: 'mode', description: 'Do you want to use the Web UI (U) or Terminal (t)?', type: 'string', optional: true } ],
@@ -73,8 +73,8 @@ class BubbleWelcome extends BubbleBase
 				}
 				else
 				{
-					control.editor.print( 'Please connect to http://localhost:8080 and proceed with configuration.', { user: 'awi' } );
-					control.editor.print( 'Waiting for database connection...', { user: 'info' } );
+					control.editor.print( 'Please connect to http://localhost:8080 and proceed with configuration.', { user: 'awi', verbose: 4 } );
+					control.editor.print( 'Waiting for database connection...', { user: 'info', verbose: 4 } );
 					while ( !dbReady )
 					{
 						await new Promise( resolve => setTimeout( resolve, 1000 ) );
@@ -83,13 +83,13 @@ class BubbleWelcome extends BubbleBase
 							if ( this.awi.database.className !== 'ConnectorSupabase' || (this.awi.database.supabase && !this.awi.database.bootstrapFailed) )
 							{
 								dbReady = true;
-								control.editor.print( 'Database connected!', { user: 'success' } );
+								control.editor.print( 'Database connected!', { user: 'success', verbose: 4 } );
 							}
 						}
 					}
 
 					// Wait for user profile creation in Web UI
-					control.editor.print( 'Waiting for user profile creation...', { user: 'info' } );
+					control.editor.print( 'Waiting for user profile creation...', { user: 'info', verbose: 4 } );
 					while ( true )
 					{
 						await new Promise( resolve => setTimeout( resolve, 1000 ) );
@@ -97,7 +97,7 @@ class BubbleWelcome extends BubbleBase
 						if ( this.awi.configuration.getUserList().length > 0 )
 							break;
 					}
-					control.editor.print( 'Profile detected!', { user: 'success' } );
+					control.editor.print( 'Profile detected!', { user: 'success', verbose: 4 } );
 				}
 			}
 			// If we are here, user declined setup or setup finished/failed.
@@ -108,10 +108,10 @@ class BubbleWelcome extends BubbleBase
 				if (!this.awi.database.supabase) dbReady = false;
 				else if (this.awi.database.bootstrapFailed)
 				{
-					control.editor.print( 'Database connected, but setup is incomplete (tables missing).', { user: 'warning' } );
+					control.editor.print( 'Database connected, but setup is incomplete (tables missing).', { user: 'warning', verbose: 4 } );
 					if (typeof this.awi.database.getBootstrapSQL === 'function') {
-						control.editor.print( 'Please run the following SQL in your Supabase SQL Editor:', { user: 'awi' } );
-						control.editor.print( this.awi.database.getBootstrapSQL(), { user: 'code' } );
+						control.editor.print( 'Please run the following SQL in your Supabase SQL Editor:', { user: 'awi', verbose: 4 } );
+						control.editor.print( this.awi.database.getBootstrapSQL(), { user: 'code', verbose: 4 } );
 					}
 					// Return success so we don't crash, but user knows what to do.
 					// In a real loop we might wait here too, but for now just exit welcome.
@@ -121,61 +121,127 @@ class BubbleWelcome extends BubbleBase
 
 			if ( !dbReady )
 			{
-				control.editor.print( 'Proceeding without database connection. Some features will be disabled.', { user: 'warning' } );
+				control.editor.print( 'Proceeding without database connection. Some features will be disabled.', { user: 'warning', verbose: 4 } );
 				return this.newAnswer( { success: true }, 'welcome:offline' );
 			}
 		}
 
-		// 2. Check for User Profile
-		// If users exist, we are good (or could ask to login, but for now just skip creation)
-		const users = this.awi.configuration.getUserList();
-		if ( users.length > 0 )
+		// 2. Interactive Login / Onboarding Flow
+		while ( !this.awi.configuration.isUserLogged() )
 		{
-			// Set as current user if not set
-			if ( !this.awi.configuration.user )
+			// Prompt for username
+			const loginPrompt = await this.awi.prompt.getParameters( {
+				list: [ { name: 'username', description: "your user name (or 'newuser' to create one)", type: 'string', optional: false } ],
+				args: {} 
+			}, basket, control );
+
+			if ( loginPrompt.isError() ) return loginPrompt;
+			
+			const values = loginPrompt.getValue();
+			if ( !values || !values.username )
 			{
-				const user = users[0];
-				this.awi.configuration.user = user.userName;
-				this.awi.configuration.userId = user.userId;
+				// Input might be interrupted or a command was executed
+				control.editor.print( 'Invalid input, please try again.', { user: 'warning', verbose: 4 } );
+				continue;
 			}
-			return this.newAnswer( 'Welcome back.', { level: 'debug' } );
+			
+			const usernameInput = (values.username.result ? values.username.result : values.username).trim();
+			const lowerInput = usernameInput.toLowerCase();
+
+			if ( lowerInput === 'newuser' )
+			{
+				// --- Onboarding Flow ---
+				control.editor.print( 'Starting onboarding procedure...', { user: 'awi', verbose: 4 } );
+				
+				const onboarding = await this.awi.prompt.getParameters( {
+					list: [
+						{ name: 'userName', description: 'your user name (e.g. francois)', type: 'string', optional: false },
+						{ name: 'email', description: 'your email address', type: 'string', optional: false },
+						{ name: 'country', description: 'your country (fr, france...)', type: 'string', optional: false },
+						{ name: 'language', description: 'your preferred language (en, fr...)', type: 'string', optional: false }
+					],
+					args: {}
+				}, basket, control );
+
+				if ( onboarding.isError() ) return onboarding;
+				const data = onboarding.getValue();
+				
+				// Create Config
+				var config = this.awi.configuration.getNewUserConfig();
+				config.userName = (data.userName.result ? data.userName.result : data.userName);
+				config.firstName = config.userName; // Defaulting firstName to userName for now
+				config.email = (data.email.result ? data.email.result : data.email);
+				config.country = (data.country.result ? data.country.result : data.country);
+				config.language = (data.language.result ? data.language.result : data.language);
+				config.awiName = config.userName;
+				config.userId = crypto.randomUUID();
+				config.persona = 'awi'; // Default persona
+
+				// Save
+				await this.awi.configuration.setNewUserConfig( config.userName.toLowerCase(), config );
+				
+				// Login
+				this.awi.configuration.user = config.userName;
+				this.awi.configuration.userId = config.userId;
+				
+				var saved = await this.awi.configuration.saveConfigs();
+				if ( saved.isSuccess() )
+				{
+					control.editor.print( 'User profile created!', { user: 'success', verbose: 4 } );
+					if ( this.awi.persona )
+						await this.awi.persona.setUser( { userName: config.userName }, basket, control );
+					break; 
+				}
+				else
+				{
+					control.editor.print( 'Failed to save configuration: ' + saved.getPrint(), { user: 'error' } );
+					return this.newError( { message: 'awi:config-save-failed' } );
+				}
+			}
+			else
+			{
+				// --- Login Flow ---
+				const userConfig = this.awi.configuration.checkUserConfig( lowerInput );
+				
+				if ( userConfig )
+				{
+					// Ask for password (dummy check for now)
+					const passPrompt = await this.awi.prompt.getParameters( {
+						list: [ { name: 'password', description: "Enter password (leave blank)", type: 'string', optional: true } ],
+						args: {} 
+					}, basket, control );
+					
+					control.editor.print('Password received, logging in...', { user: 'debug1', verbose: 4 });
+
+					// We accept everything for now as requested
+					
+					// Perform Login
+					await this.awi.configuration.setUser( { userName: lowerInput }, basket, control );
+					
+					control.editor.print('User set, loading persona...', { user: 'debug1', verbose: 4 });
+
+					// Ensure persona is loaded
+					if ( this.awi.persona )
+						await this.awi.persona.setUser( { userName: lowerInput }, basket, control );
+
+					control.editor.print('Persona loaded.', { user: 'debug1', verbose: 4 });
+
+					break; // Logged in
+				}
+				else
+				{
+					control.editor.print( "User '" + usernameInput + "' not found.", { user: 'error' } );
+					// Loop continues
+				}
+			}
 		}
 
-		// 3. Create New Profile
-		control.editor.print( 'No user profile found. Let\'s create one.', { user: 'awi' } );
-		
-		const inputs = [
-			{ name: 'firstName', description: 'your first name', type: 'string', optional: false },
-			{ name: 'lastName', description: 'your last name', type: 'string', optional: false },
-			{ name: 'userName', description: 'choose a user name', type: 'string', optional: false }
-		];
+		var personaName = 'Awi';
+		if ( this.awi.persona && this.awi.persona.persona && this.awi.persona.persona.name )
+			personaName = this.awi.persona.persona.name;
 
-		const answers = await this.awi.prompt.getParameters( { list: inputs, args: {} }, basket, control );
-		if ( answers.isError() ) return answers;
-
-		const data = answers.getValue();
-		var config = this.awi.configuration.getNewUserConfig();
-		config.firstName = data.firstName.result;
-		config.lastName = data.lastName.result;
-		config.fullName = config.firstName + ' ' + config.lastName;
-		config.userName = data.userName.result;
-		config.userId = crypto.randomUUID();
-		
-		await this.awi.configuration.setNewUserConfig( config.userName.toLowerCase(), config );
-		
-		// Set as active user
-		this.awi.configuration.user = config.userName;
-		this.awi.configuration.userId = config.userId;
-
-		var answer = await this.awi.configuration.saveConfigs();
-		
-		if ( answer.isSuccess() )
-		{
-			return this.newAnswer( 'User profile created.', { level: 'debug', message: 'awi:config-changed' } );
-		}
-		
-		control.editor.print( 'Failed to save configuration.', { user: 'error' } );
-		return this.newError( { message: 'awi:config-save-failed' } );
+		control.editor.print( 'Welcome back, I am ' + personaName + ', how can I help?', { user: 'awi', verbose: 4 } );
+		return this.newAnswer( { success: true } );
 	}
 	async playback( args, basket, control )
 	{

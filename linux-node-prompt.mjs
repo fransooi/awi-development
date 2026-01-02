@@ -28,13 +28,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 loadEnv({ path: join(__dirname, '.env') });
 
-const databasePrefix = 'TOCOMPLETE_'; // e.g., 'MYPROJECT_'
-const projectName = 'AWI Server';
+const databasePrefix = 'THINKNOTES_'; // e.g., 'MYPROJECT_'
+const projectName = 'ThinkNotes Server';
 
 async function startAwi( prompt, config )
 {
 	var basket = {};
 	var awi = new Awi( null, config );
+	if ( config.verbosity )
+		awi.verbosity = config.verbosity;
 	var answer = await awi.connect( {} );
 	if ( answer.isSuccess() )
 	{
@@ -67,6 +69,7 @@ function getArguments()
 	var answer =
 	{
 		prompt: '',
+		verbosity: 'warning error',
 		config: {},
 		elements:
 		[
@@ -92,8 +95,7 @@ function getArguments()
       // Database connectors, Supabase = https://supabase.com/
       ////////////////////////////////////////////////////////////////////////////////////
 			{ name: 'connectors/database/supabase', config: { priority: --priority }, options: {
-				databasePrefix: databasePrefix,
-				delayed: true
+				databasePrefix: databasePrefix
 			} },
 			//{ name: 'connectors/database/storage', config: { priority: --priority }, options: {
 			//	fileMode: 'supabase',
@@ -199,9 +201,9 @@ function getArguments()
       // text, speech, image, video, generative, RAGs you name it.
       // https://www.edenai.co/
       ////////////////////////////////////////////////////////////////////////////////////
-			{ name: 'connectors/ai/aiedenspeech', config: { priority: --priority }, options: { aiKey: process.env.EDEN_AI_KEY } },
-			{ name: 'connectors/ai/aiedentext', config: { priority: --priority }, options: { aiKey: process.env.EDEN_AI_KEY } },
-			{ name: 'connectors/ai/aiedenchat', config: { priority: --priority }, options: { aiKey: process.env.EDEN_AI_KEY } },
+			{ name: 'connectors/ai/aiedenspeech', config: { priority: --priority }, options: { aiKey: process.env[databasePrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
+			{ name: 'connectors/ai/aiedentext', config: { priority: --priority }, options: { aiKey: process.env[databasePrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
+			{ name: 'connectors/ai/aiedenchat', config: { priority: --priority }, options: { aiKey: process.env[databasePrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
 
       ////////////////////////////////////////////////////////////////////////////////////
       // Commmand line direct interface

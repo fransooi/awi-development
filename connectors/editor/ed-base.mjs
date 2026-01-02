@@ -84,9 +84,9 @@ export default class EdBase extends Base
 	print( text, options = {} )
 	{
 		options.user = typeof options.user == 'undefined' ? 'awi' : options.user;
-		var prompt = '> ';
+		var prompt = '.(??) ';
 		if ( this.awi.configuration && this.awi.configuration.getPrompt )
-			prompt = this.awi.configuration.getPrompt( options.user );
+			prompt = this.awi.configuration.getPrompt( options.user, options );
 		
 		if ( !prompt )
 		{

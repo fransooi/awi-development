@@ -52,9 +52,9 @@ class BubbleImport extends BubbleBase
 		{
 			var answer = await self.awi.language.import( path );
 			if ( answer.isSuccess() )
-				self.awi.editor.print( this, [ 'File successfully imported to: ' + path ], { user: 'information' } );
+				self.awi.editor.print( [ 'File successfully imported to: ' + path ], { user: 'information' } );
 			else
-				self.awi.editor.print( this, [ 'Cannot import file : ' + path ], { user: 'error' } );
+				self.awi.editor.print( [ 'Cannot import file : ' + path ], { user: 'error' } );
 			return answer;
 		}
 		if ( /^\d+$/.test( basket.prompt ) )

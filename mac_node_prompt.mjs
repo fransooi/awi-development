@@ -28,20 +28,78 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 loadEnv({ path: join(__dirname, '.env') });
 
-const databasePrefix = 'TOCOMPLETE_'; // e.g., 'MYPROJECT_'
-const projectName = 'AWI Server';
+const databasePrefix = 'TOCOMPLETE_';
+const projectName = 'Awi Server';
 
 async function startAwi( prompt, config )
 {
 	var basket = {};
 	var awi = new Awi( null, config );
+
+	// Graceful shutdown handler
+	const shutdown = async () => {
+		console.log( '\n.(°°) Closing network connections...' );
+		const closePromises = [];
+
+		if ( awi.http )
+		{
+			if ( awi.http.httpServer )
+			{
+				closePromises.push( new Promise( resolve => {
+					awi.http.httpServer.close( (err) => {
+						if (err) console.error('Error closing HTTP server:', err);
+						resolve();
+					});
+				}));
+			}
+			if ( awi.http.httpsServer )
+			{
+				closePromises.push( new Promise( resolve => {
+					awi.http.httpsServer.close( (err) => {
+						if (err) console.error('Error closing HTTPS server:', err);
+						resolve();
+					});
+				}));
+			}
+		}
+
+		if ( awi.websocket && awi.websocket.wsServer )
+		{
+			closePromises.push( new Promise( resolve => {
+				awi.websocket.wsServer.close( (err) => {
+					if (err) console.error('Error closing WebSocket server:', err);
+					resolve();
+				});
+				if (awi.websocket.wsServer.clients) {
+					for (const client of awi.websocket.wsServer.clients) {
+						client.terminate();
+					}
+				}
+			}));
+		}
+
+		if ( closePromises.length > 0 )
+		{
+			await Promise.all( closePromises );
+			await new Promise( resolve => setTimeout( resolve, 500 ) );
+		}
+
+		process.exit( 0 );
+	};
+	process.on( 'SIGINT', shutdown );
+	process.on( 'SIGTERM', shutdown );
+
 	if ( config.verbosity )
 		awi.verbosity = config.verbosity;
 	var answer = await awi.connect( {} );
 	if ( answer.isSuccess() )
 	{
+		if ( config.userVerbosity )
+			awi.configuration.setVerbose( config.userVerbosity );
+
 		if ( awi.http )
 			await awi.http.printStartupBanner();
+
 		await awi.prompt.prompt( { prompt: prompt || '' }, basket, { editor: awi.editor } );
 	}
 	else
@@ -55,21 +113,23 @@ async function startAwi( prompt, config )
 function getArguments()
 {
 	var domain = 'http://localhost:8080';
-	var publicUrlPath = './data/public/temp';
+    var envDataRoot = process.env.DATA_ROOT;
+	var dataRoot = envDataRoot || './data';
+	var dataPath = envDataRoot || './data';
+	var httpRootDirectory = envDataRoot ? (envDataRoot + '/public') : './data/public';
+	var configurationPath = envDataRoot ? (envDataRoot + '/configs') : './data/configs';
+	var logsPath = envDataRoot ? (envDataRoot + '/logs') : './data/logs';
+	var storagePath = envDataRoot ? (envDataRoot + '/storage') : './data/storage';
+	var tempPath = envDataRoot ? (envDataRoot + '/temp') : './data/temp';
+	var propertiesPath = envDataRoot ? (envDataRoot + '/properties') : './data/properties';
+	var publicUrlPath = envDataRoot ? (envDataRoot + '/public/temp') : './data/public/temp';
 	var publicUrl = domain + '/temp';
-	var dataRoot = './data';
-	var dataPath = './data';
-	var httpRootDirectory = './data/public';
-	var configurationPath = './data/configs';
-	var logsPath = './data/logs';
-	var storagePath = './data/storage';
-	var tempPath = './data/temp';
-	var propertiesPath = './data/properties';
 	var priority = 100;
 	var answer =
 	{
 		prompt: '',
-		verbosity: 'warning error',
+		verbosity: 'info warning error',
+		userVerbosity: 1,
 		config: {},
 		elements:
 		[
@@ -81,22 +141,13 @@ function getArguments()
 			{ name: 'connectors/system/zip', config: { priority: --priority }, options: {} },
 			{ name: 'connectors/awi/messages', config: { priority: --priority }, options: {} },
 			{ name: 'connectors/awi/utilities', config: { priority: --priority }, options: {} },
-			{ name: 'connectors/editor/editor', config: { priority: --priority }, options: {
-				useColors: false,
-				path: './editor',
-				editors: {
-					'commandline': {},
-					'http': {},
-					'websocket': {}
-				}
-			} },
+
 
       ////////////////////////////////////////////////////////////////////////////////////
       // Database connectors, Supabase = https://supabase.com/
       ////////////////////////////////////////////////////////////////////////////////////
 			{ name: 'connectors/database/supabase', config: { priority: --priority }, options: {
-				databasePrefix: databasePrefix,
-				delayed: true
+				databasePrefix: databasePrefix
 			} },
 			//{ name: 'connectors/database/storage', config: { priority: --priority }, options: {
 			//	fileMode: 'supabase',
@@ -153,7 +204,7 @@ function getArguments()
       // Authentication (need Google Cloud oauth via Supabase, handles Android apps too, 
       // iPhone to come)
       ////////////////////////////////////////////////////////////////////////////////////
-			//{ name: 'connectors/awi/authentification_oauth', config: { priority: --priority }, options: {} },
+			{ name: 'connectors/awi/authentification_oauth', config: { priority: --priority }, options: {} },
 
       ////////////////////////////////////////////////////////////////////////////////////
       // Network, default is http://localhost:8080
@@ -164,7 +215,7 @@ function getArguments()
 			{ name: 'connectors/network/httpserver', config: { priority: --priority }, options: {
 				rootDirectory: httpRootDirectory,
 				envFilePath: join(__dirname, '.env'),
-				enableHttp: true,
+				enableHttp: false,
 				enableHttps: false,
 				port: 8080,
 				httpsPort: 8080,
@@ -181,15 +232,16 @@ function getArguments()
 			//	turnstileSecret: process.env.CLOUDFARE_TURNSTILE_SECRET
 			//} },
       
-      ////////////////////////////////////////////////////////////////////////////////////
-      // Websocket server, can work behind NGINX or/and Cloudflare
-      // Default port is 1033
-      ////////////////////////////////////////////////////////////////////////////////////
+      			////////////////////////////////////////////////////////////////////////////////////
+			// Websocket server, can work behind NGINX or/and Cloudflare
+			// Default port is 1033
+			////////////////////////////////////////////////////////////////////////////////////
 			{ name: 'connectors/network/websocketserver', config: { priority: --priority }, options: {
-					port: 1033
+					port: 1033,
+					enable: false
 			} },
 
-      ////////////////////////////////////////////////////////////////////////////////////
+			////////////////////////////////////////////////////////////////////////////////////
       // Bubbles
       ////////////////////////////////////////////////////////////////////////////////////
 			{ name: 'bubbles/awi/*', config: {}, options: {} },
@@ -202,9 +254,9 @@ function getArguments()
       // text, speech, image, video, generative, RAGs you name it.
       // https://www.edenai.co/
       ////////////////////////////////////////////////////////////////////////////////////
-			{ name: 'connectors/ai/aiedenspeech', config: { priority: --priority }, options: { aiKey: process.env.EDEN_AI_KEY } },
-			{ name: 'connectors/ai/aiedentext', config: { priority: --priority }, options: { aiKey: process.env.EDEN_AI_KEY } },
-			{ name: 'connectors/ai/aiedenchat', config: { priority: --priority }, options: { aiKey: process.env.EDEN_AI_KEY } },
+			{ name: 'connectors/ai/aiedenspeech', config: { priority: --priority }, options: { aiKey: process.env[databasePrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
+			{ name: 'connectors/ai/aiedentext', config: { priority: --priority }, options: { aiKey: process.env[databasePrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
+			{ name: 'connectors/ai/aiedenchat', config: { priority: --priority }, options: { aiKey: process.env[databasePrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
 
       ////////////////////////////////////////////////////////////////////////////////////
       // Commmand line direct interface
@@ -212,6 +264,16 @@ function getArguments()
 			{ name: 'connectors/awi/parser', config: { priority: --priority }, options: {} },
 			{ name: 'connectors/awi/persona', config: { priority: --priority }, options: {} },
 			{ name: 'connectors/awi/prompt', config: { priority: --priority }, options: {} },
+			// { name: 'connectors/thinknotes/thinknotes', config: { priority: --priority }, options: { modulePath: '/Users/fransooa/development/thinkappsai/thinknotes/awi/connectors/thinknotes/thinknotes.mjs', databasePrefix: databasePrefix } },
+			{ name: 'connectors/editor/editor', config: { priority: --priority }, options: {
+				useColors: false,
+				path: './editor',
+				editors: {
+					'commandline': {},
+					'http': {},
+					'websocket': {}
+				}
+			} }
 		]
 	};
 
@@ -219,28 +281,36 @@ function getArguments()
 	var quit = false;
 	for ( var a = 2; ( a < process.argv.length ) && !quit && !error; a++ )
 	{
-		var command = process.argv[ a ].toLowerCase();
+		var arg = process.argv[ a ];
+		var lowerArg = arg.toLowerCase();
 
 		var pos;
-		if( ( pos = command.indexOf( '--configurations=' ) ) >= 0 )
+		if( ( pos = lowerArg.indexOf( '--configurations=' ) ) >= 0 )
 		{
-			answer.config.configurations = command.substring( pos, command.length );
+			answer.config.configurations = arg.substring( pos, arg.length );
 		}
-		else if( ( pos = command.indexOf( '--engine=' ) ) >= 0 )
+		else if( ( pos = lowerArg.indexOf( '--engine=' ) ) >= 0 )
 		{
-			answer.config.engine = command.substring( pos, command.length );
+			answer.config.engine = arg.substring( pos, arg.length );
 		}
-		else if( ( pos = command.indexOf( '--data=' ) ) >= 0 )
+		else if( ( pos = lowerArg.indexOf( '--data=' ) ) >= 0 )
 		{
-			answer.config.data = command.substring( pos, command.length );
+			answer.config.data = arg.substring( pos, arg.length );
+		}
+		else if( ( pos = lowerArg.indexOf( '--verbose=' ) ) >= 0 )
+		{
+			var v = parseInt( arg.substring( pos + 10 ) );
+			if ( !isNaN( v ) )
+				answer.userVerbosity = Math.max( 1, Math.min( 4, v ) );
 		}
 		else if ( !error )
 		{
 			if ( answer.prompt.length > 0 )
 				answer.prompt += ' ';
-			answer.prompt += command;
+			answer.prompt += arg;
 		}
 	}
+	console.log('DEBUG: Parsed prompt:', answer.prompt);
 	return { success: !error, data: answer };
 };
 

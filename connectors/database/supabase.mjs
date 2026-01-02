@@ -72,7 +72,7 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 			// Don't fail the entire server startup, just stay disconnected
 			const msg = "\n⚠️  Supabase credentials missing. Database functionality will be disabled until configured.\n";
 			try {
-				if (this.awi.editor) await this.awi.editor.print(msg);
+				if (this.awi.editor) await this.awi.editor.print(msg, { user: 'warning', verbose: 4 });
 				else console.log(msg);
 			} catch (e) {
 				console.log(msg);
@@ -249,6 +249,57 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 		catch (error)
 		{
 			return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'updateUserConfig' } );
+		}
+	}
+
+	async getNamedConfig({ userId, type, name }) 
+	{
+		if (!this.supabase) return this.newError({ message: 'supabase:not-initialized', data: 'Supabase client not initialized' }, { functionName: 'getNamedConfig' });
+		try
+		{
+			const client = await this._getUserClientFrom({ userId });
+			const { data, error } = await client
+				.from('awi_named_configs')
+				.select('config')
+				.eq('user_id', userId)
+				.eq('type', type)
+				.eq('name', name)
+				.single();
+			if (error) 
+				return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'getNamedConfig' } );
+			return this.newAnswer(data ? data.config : null);
+		}
+		catch (error)
+		{
+			return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'getNamedConfig' } );
+		}
+	}
+
+	async updateNamedConfig({ userId, type, name, data }) 
+	{
+		if (!this.supabase) return this.newError({ message: 'supabase:not-initialized', data: 'Supabase client not initialized' }, { functionName: 'updateNamedConfig' });
+		try
+		{
+			const client = this.admin || this.supabase;
+			const { error } = await client
+				.from('awi_named_configs')
+				.upsert({ 
+					user_id: userId, 
+					type: type, 
+					name: name, 
+					config: data, 
+					updated_at: new Date().toISOString() 
+				}, { onConflict: 'user_id, type, name' })
+				.select();
+			if (error) 
+			{
+				return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'updateNamedConfig' } );
+			}
+			return this.newAnswer(true);
+		}
+		catch (error)
+		{
+			return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'updateNamedConfig' } );
 		}
 	}
 
@@ -637,11 +688,12 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 				create table if not exists public.awi_named_configs (
 					id uuid default uuid_generate_v4() primary key,
 					user_id uuid not null references auth.users(id) on delete cascade,
+					type text not null,
 					name text not null,
 					config jsonb,
 					created_at timestamp with time zone default timezone('utc'::text, now()) not null,
 					updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
-					unique(user_id, name)
+					unique(user_id, type, name)
 				);
 				alter table public.awi_named_configs enable row level security;
 				create policy "Users can view own named configs" on public.awi_named_configs for select using (auth.uid() = user_id);

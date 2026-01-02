@@ -63,7 +63,7 @@ class BubbleInput extends BubbleBase
 		switch ( firstType )
 		{
 			case 'array':
-				text = 'Please enter, prompt by prompt, ' + description + '.\nPress <return> to exit...', { user: 'awi' };
+				text = 'Please enter, prompt by prompt, ' + description + '.\nPress <return> to exit...';
 				break;
 			case 'choices':
 				text = description + '\n';
@@ -83,7 +83,7 @@ class BubbleInput extends BubbleBase
 				text = 'Please enter ' + description + '?'
 				break;
 		}
-		control.editor.print( text.split( '\n' ), { user: 'question', newLine: false, space: true } );
+		control.editor.print( text.split( '\n' ), { user: 'question', newLine: true, space: true } );
 
 		var self = this;
 		var finished = false;
@@ -91,6 +91,7 @@ class BubbleInput extends BubbleBase
 		control.editor.rerouteInput(
 			function( args )
 			{
+				control.editor.print('DEBUG: Input received: "' + (args && args.prompt ? args.prompt : 'undefined') + '"', { user: 'debug1', verbose: 4 });
 				var start = 0;
 				var { prompt } = self.awi.getArgs( [ 'prompt' ], args, {}, [ '' ] );
 				var c = self.awi.utilities.getCharacterType( prompt.charAt( start ) );
@@ -111,12 +112,12 @@ class BubbleInput extends BubbleBase
 						var number = parseInt( prompt );
 						if ( !isNaN( number ) )
 						{
-							var interval = basket.inputInfo.interval;
+							var interval = inputInfo.interval;
 							if ( interval )
 							{
 								if ( number < interval.start || number < interval.end )
 								{
-									self.awi.editor.print( this, [ 'Please enter a number between ' + interval.start + ' and ' + interval.end + '...' ], { user: 'information' } );
+									self.awi.editor.print( [ 'Please enter a number between ' + interval.start + ' and ' + interval.end + '...' ], { user: 'information' } );
 									return;
 								}
 							}
@@ -143,17 +144,22 @@ class BubbleInput extends BubbleBase
 								break;
 							}
 							firstResult.push( result );
+							
+							// Update prompt for next item
+							var nextPrompt = prompt + (firstResult.length + 1) + '. ';
+							control.editor.setPrompt( nextPrompt );
+							
 							control.editor.waitForInput( { force: true } );
 							return;
 						case 'choices':
 							result = parseInt( result );
 							var found;
-							if ( !isNaN( result ) && result >= 0 && result <= basket.inputInfo.choices.length )
-								found = basket.inputInfo.choices[ result - 1 ];
+							if ( !isNaN( result ) && result >= 0 && result <= inputInfo.choices.length )
+								found = inputInfo.choices[ result - 1 ];
 							if ( !found )
 							{
-								text.push(  + basket.inputInfo.default + '.' );
-								control.editor.print( 'Please enter a number between 1 and ' + basket.inputInfo.choices.length, { user: 'awi' } );
+								text.push(  + inputInfo.default + '.' );
+								control.editor.print( 'Please enter a number between 1 and ' + inputInfo.choices.length, { user: 'awi' } );
 								control.editor.waitForInput( { force: true } );
 								return;
 							}
@@ -165,7 +171,7 @@ class BubbleInput extends BubbleBase
 						case 'yesno':
 							if ( result == '<___cancel___>' )
 							{
-								result = basket.inputInfo.default;
+								result = inputInfo.default;
 							}
 							else
 							{
@@ -191,7 +197,14 @@ class BubbleInput extends BubbleBase
 							break;
 						case 'choices':
 						case 'yesno':
-							result = basket.inputInfo.default;
+							result = inputInfo.default;
+							break;
+						default:
+							// Handle standard types (string, number, etc.) default/optional
+							if ( inputInfo.default !== undefined )
+								result = inputInfo.default;
+							else if ( inputInfo.optional )
+								result = ""; // Empty string for optional
 							break;
 					}
 				}
@@ -204,6 +217,7 @@ class BubbleInput extends BubbleBase
 		var prompt = this.awi.configuration.getPrompt( 'question' );
 		if ( firstType == 'array' )
 			prompt += '1. ';
+		control.editor.setPrompt( prompt );
 		control.editor.waitForInput();
 		return new Promise( ( resolve ) =>
 		{
