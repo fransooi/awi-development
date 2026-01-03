@@ -114,7 +114,7 @@ class ConnectorAISpeech extends ConnectorAIBase
 		{
 			const soundPath = parameters?.soundPath || null;
 			if (!soundPath)
-				return this.replyError(this.newError({ message: 'awi:missing-argument', data: 'soundPath' }, { functionName: 'command_uploadSound' }), message, editor);
+				return this.replyError(this.newError({ message: 'awi:missing-argument', data: 'soundPath' }, { stack: new Error().stack }), message, editor);
 			const rootDirectory = this.awi.http.rootDirectory;
 			const domain = this.awi.http.domain;
 
@@ -122,14 +122,14 @@ class ConnectorAISpeech extends ConnectorAIBase
 			const tempPath = rootDirectory + '/' + fileName;
 			const copyRes = await this.awi.system.copyFile(soundPath, tempPath);
 			if (copyRes && typeof copyRes.isError === 'function' && copyRes.isError())
-				return this.replyError(this.newError({ message: 'awi:upload-sound-error', data: copyRes.getPrint ? copyRes.getPrint() : copyRes }, { functionName: 'command_uploadSound' }), message, editor);
+				return this.replyError(this.newError({ message: 'awi:upload-sound-error', data: copyRes.getPrint ? copyRes.getPrint() : copyRes }, { stack: new Error().stack }), message, editor);
 			await this.awi.utilities.sleep(250);
 			const url = domain + '/' + fileName;
 			return this.replySuccess(this.newAnswer(url, { functionName: 'command_uploadSound' }), message, editor);
 		}
 		catch(e)
 		{
-			return this.replyError(this.newError({ message: 'awi:upload-sound-error', data: e?.message || e }, { functionName: 'command_uploadSound' }), message, editor);
+			return this.replyError(this.newError({ message: 'awi:upload-sound-error', data: e?.message || e }, { stack: new Error().stack }), message, editor);
 		}
 	}
 	async command_computeDefaultOptions(parameters, message, editor)
@@ -162,7 +162,7 @@ class ConnectorAISpeech extends ConnectorAIBase
 		}
 		catch(e)
 		{
-			return this.replyError(this.newError({ message: 'awi:transcription-error', data: e?.message || e }, { functionName: 'command_transcribe' }), message, editor);
+			return this.replyError(this.newError({ message: 'awi:transcription-error', data: e?.message || e }, { stack: new Error().stack }), message, editor);
 		}
 	}
 	async transcribe(args)
@@ -204,12 +204,12 @@ class ConnectorAISpeech extends ConnectorAIBase
 			const tempPath = rootDirectory + '/' + fileName;
 			const copyRes = await this.awi.system.copyFile(args.soundPath, tempPath);
 			if (copyRes && typeof copyRes.isError === 'function' && copyRes.isError())
-				return this.newError({ message: 'awi:upload-sound-error', data: copyRes.getPrint ? copyRes.getPrint() : copyRes }, { functionName: 'transcribe' });
+				return this.newError({ message: 'awi:upload-sound-error', data: copyRes.getPrint ? copyRes.getPrint() : copyRes }, { stack: new Error().stack });
 			await this.awi.utilities.sleep(250);
 			fileUrl = domain + '/' + fileName;
 		}
 		if (!fileUrl)
-			return this.newError({ message: 'awi:missing-argument', data: 'file_url' }, { functionName: 'transcribe' });
+			return this.newError({ message: 'awi:missing-argument', data: 'file_url' }, { stack: new Error().stack });
 
 		const startOptions = {
 			method: 'POST',
@@ -233,11 +233,11 @@ class ConnectorAISpeech extends ConnectorAIBase
 		catch(err)
 		{
 			const errMsg = err?.response?.data || err?.message || err;
-			return this.newError({ message: 'awi:speech-to-text-error', data: errMsg }, { functionName: 'transcribe' });
+			return this.newError({ message: 'awi:speech-to-text-error', data: errMsg }, { stack: new Error().stack });
 		}
 
 		if (!jobId)
-			return this.newError({ message: 'awi:speech-to-text-error', data: 'missing-job-id' }, { functionName: 'transcribe' });
+			return this.newError({ message: 'awi:speech-to-text-error', data: 'missing-job-id' }, { stack: new Error().stack });
 
 		// Poll until done (sync server behavior).
 		const retrieveUrl = 'https://api.edenai.run/v2/audio/speech_to_text_async/' + jobId;
@@ -252,20 +252,20 @@ class ConnectorAISpeech extends ConnectorAIBase
 				const sub = (data.results && data.results[p]) ? data.results[p] : (data[p] || null);
 				const status = (data.status || sub?.status || '').toLowerCase();
 				if (status && [ 'finished', 'succeeded', 'success', 'completed', 'done' ].includes(status))
-					return this.newAnswer( toTranscription(jobId, sub || {}, data), { functionName: 'transcribe' } );
+					return this.newAnswer( toTranscription(jobId, sub || {}, data), { stack: new Error().stack } );
 				if (status && [ 'failed', 'error' ].includes(status))
-					return this.newError({ message: 'awi:speech-to-text-error', data: sub || data }, { functionName: 'transcribe' });
+					return this.newError({ message: 'awi:speech-to-text-error', data: sub || data }, { stack: new Error().stack });
 				// Some providers return final payload without status; detect presence of text.
 				const text = sub?.text || sub?.transcription || sub?.transcript || null;
 				if (text)
-					return this.newAnswer( toTranscription(jobId, sub || {}, data), { functionName: 'transcribe' } );
+					return this.newAnswer( toTranscription(jobId, sub || {}, data), { stack: new Error().stack } );
 			}
 			catch(e)
 			{
 				// keep polling
 			}
 		}
-		return this.newError({ message: 'awi:speech-to-text-timeout', data: { jobId: jobId, provider: provider } }, { functionName: 'transcribe' });
+		return this.newError({ message: 'awi:speech-to-text-timeout', data: { jobId: jobId, provider: provider } }, { stack: new Error().stack });
 	}
 	async speechToText( args, basket = {}, control = {} )
 	{
@@ -276,7 +276,7 @@ class ConnectorAISpeech extends ConnectorAIBase
 
 		var { audio, isZipped, sourceType, options } = this.awi.getArgs( [ 'audio', 'isZipped', 'sourceType', 'options' ], args, basket, [ '', false, 'base64', {} ] );
 		if ( !audio )
-			return this.newError( 'awi:missing-argument', 'audio' );
+			return this.newError({ message: 'awi:missing-argument', data: 'audio' }, { stack: new Error().stack });
 		var config = await this.getConfig( options );
 
 		var aiOptions;
@@ -401,7 +401,7 @@ class ConnectorAISpeech extends ConnectorAIBase
 				} )
 				.catch( function( err )
 				{
-					resolve( self.newError({ message: 'awi:speech-to-text-error', data: err }) );
+					resolve( self.newError({ message: 'awi:speech-to-text-error', data: err }, { stack: new Error().stack }) );
 				} );
 		} );
 	}

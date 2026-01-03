@@ -68,7 +68,7 @@ class BubbleView extends BubbleBase
 		}
 		var answer = await this.awi.system.findFiles( args, basket, control );
 		if ( !answer.isSuccess() )
-			return this.newError( { message: 'awi:not-found' } );
+			return this.newError( { message: 'awi:not-found' }, { stack: new Error().stack } );
 
 		if ( answer.isSuccess() )
 			return await playIt( answer.fileList[ 0 ], answer.fileList );

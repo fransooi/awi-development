@@ -65,10 +65,10 @@ class ConnectorDrives extends ConnectorBase
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'awi:cannot-add-drive', data: drive }, { functionName: 'command_addDrive' } );
+			return this.newError( { message: 'awi:cannot-add-drive', data: drive }, { stack: new Error().stack } );
 		}
 		if (!drive)
-			return this.newError( { message: 'awi:drive-not-found', data: drive }, { functionName: 'command_addDrive' } );
+			return this.newError( { message: 'awi:drive-not-found', data: drive }, { stack: new Error().stack } );
 
 		var answer = await drive.connect( options );
 		if (answer.isError())
@@ -142,7 +142,7 @@ class ConnectorDrives extends ConnectorBase
 	{
 		if ( this[ 'command_' + message.command ] )
 			return this[ 'command_' + message.command ]( message.parameters, message, editor );
-		return this.replyError( this.newError( { message: 'awi:command-not-found', data: message.command }, { functionName: 'command' } ), message, editor );
+		return this.replyError( this.newError( { message: 'awi:command-not-found', data: message.command }, { stack: new Error().stack } ), message, editor );
 	}
 
 	// Parse pathname format: "drivename:/path/to/file"
@@ -198,7 +198,7 @@ class ConnectorDrives extends ConnectorBase
 		else
 			targetDrive = Object.values(this.drives)[0];
 		if (!targetDrive)
-			return this.replyError(this.newError( { message: 'awi:no-drive-available' }, { functionName: 'command_listFiles' } ), message, editor);
+			return this.replyError(this.newError( { message: 'awi:no-drive-available' }, { stack: new Error().stack } ), message, editor);
 
 		const result = await targetDrive.command_listFiles(parameters);
 		if (result.isError())
@@ -216,12 +216,12 @@ class ConnectorDrives extends ConnectorBase
 				if (result.isSuccess())
 					return this.replySuccess(result, message, editor);
 			}
-			return this.replyError(this.newError( { message: 'awi:file-not-found', data: parameters.path }, { functionName: 'command_getFile' } ), message, editor);
+			return this.replyError(this.newError( { message: 'awi:file-not-found', data: parameters.path }, { stack: new Error().stack } ), message, editor);
 		}
 
 		var targetDrive = this.drives[parameters.source];
 		if (!targetDrive)
-			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { functionName: 'command_getFile' } ), message, editor);
+			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { stack: new Error().stack } ), message, editor);
 		const result = await targetDrive.command_getFile(parameters);
 		if (result.isError())
 			return this.replyError(result, message, editor);
@@ -232,7 +232,7 @@ class ConnectorDrives extends ConnectorBase
 	{
 		let targetDrive = parameters.source ? this.drives[parameters.source] : Object.values(this.drives)[0];
 		if (!targetDrive)
-			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { functionName: 'command_downloadFile' } ), message, editor);
+			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { stack: new Error().stack } ), message, editor);
 
 		const result = await targetDrive.command_downloadFile(parameters);
 		if (result.isError())
@@ -244,7 +244,7 @@ class ConnectorDrives extends ConnectorBase
 	{
 		let targetDrive = parameters.source ? this.drives[parameters.source] : Object.values(this.drives)[0];
 		if (!targetDrive)
-			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { functionName: 'command_uploadFile' } ), message, editor);
+			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { stack: new Error().stack } ), message, editor);
 
 		const result = await targetDrive.command_uploadFile(parameters);
 		if (result.isError())
@@ -256,7 +256,7 @@ class ConnectorDrives extends ConnectorBase
 	{
 		let targetDrive = parameters.source ? this.drives[parameters.source] : Object.values(this.drives)[0];
 		if (!targetDrive)
-			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { functionName: 'command_createFolder' } ), message, editor);
+			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { stack: new Error().stack } ), message, editor);
 
 		const result = await targetDrive.command_createFolder(parameters);
 		if (result.isError())
@@ -268,7 +268,7 @@ class ConnectorDrives extends ConnectorBase
 	{
 		let targetDrive = parameters.source ? this.drives[parameters.source] : Object.values(this.drives)[0];
 		if (!targetDrive)
-			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { functionName: 'command_deleteFile' } ), message, editor);
+			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { stack: new Error().stack } ), message, editor);
 
 		const result = await targetDrive.command_deleteFile(parameters);
 		if (result.isError())
@@ -280,7 +280,7 @@ class ConnectorDrives extends ConnectorBase
 	{
 		let targetDrive = parameters.source ? this.drives[parameters.source] : Object.values(this.drives)[0];
 		if (!targetDrive)
-			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { functionName: 'command_deleteFile' } ), message, editor);
+			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { stack: new Error().stack } ), message, editor);
 
 		const result = await targetDrive.command_deleteFile(parameters);
 		if (result.isError())
@@ -292,7 +292,7 @@ class ConnectorDrives extends ConnectorBase
 	{
 		let targetDrive = parameters.source ? this.drives[parameters.source] : Object.values(this.drives)[0];
 		if (!targetDrive)
-			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { functionName: 'command_renameFile' } ), message, editor);
+			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { stack: new Error().stack } ), message, editor);
 
 		const result = await targetDrive.command_renameFile(parameters);
 		if (result.isError())
@@ -304,7 +304,7 @@ class ConnectorDrives extends ConnectorBase
 	{
 		let targetDrive = parameters.source ? this.drives[parameters.source] : Object.values(this.drives)[0];
 		if (!targetDrive)
-			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { functionName: 'command_moveFile' } ), message, editor);
+			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { stack: new Error().stack } ), message, editor);
 
 		const result = await targetDrive.command_moveFile(parameters);
 		if (result.isError())
@@ -316,7 +316,7 @@ class ConnectorDrives extends ConnectorBase
 	{
 		let targetDrive = parameters.source ? this.drives[parameters.source] : Object.values(this.drives)[0];
 		if (!targetDrive)
-			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { functionName: 'command_searchFiles'} ), message, editor);
+			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.source }, { stack: new Error().stack } ), message, editor);
 
 		const result = await targetDrive.command_searchFiles(parameters);
 		if (result.isError())
@@ -328,7 +328,7 @@ class ConnectorDrives extends ConnectorBase
 	{
 		let targetDrive = parameters.source ? this.drives[parameters.source] : Object.values(this.drives)[0];
 		if (!targetDrive)
-			return this.replyError(this.newError( { message: 'awi:no-drive-available', data: parameters.source }, { functionName: 'command_watchFolder' } ), message, editor);
+			return this.replyError(this.newError( { message: 'awi:no-drive-available', data: parameters.source }, { stack: new Error().stack } ), message, editor);
 
 		const result = await targetDrive.command_watchFolder(parameters);
 		if (result.isError())
@@ -363,7 +363,7 @@ class ConnectorDrives extends ConnectorBase
 		const sourceDrive = this.drives[parameters.sourceDrive];
 		const targetDrive = this.drives[parameters.targetDrive];
 		if (!sourceDrive || !targetDrive)
-			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.sourceDrive + ' ' + parameters.targetDrive }, { functionName: 'command_copyFileBetweenDrives' } ), message, editor);
+			return this.replyError(this.newError( { message: 'awi:drive-not-found', data: parameters.sourceDrive + ' ' + parameters.targetDrive }, { stack: new Error().stack } ), message, editor);
 
 		const downloadParams = {
 			...parameters,

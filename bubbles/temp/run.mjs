@@ -65,12 +65,12 @@ class BubbleRun extends BubbleBase
 				var number = parseInt( prompt ) - 1;
 				if ( number >= 0 && number < files.length )
 					return await playIt( files[ number ] );
-				return this.newError( { message: 'awi:not-found' } );
+				return this.newError( { message: 'awi:not-found' }, { stack: new Error().stack } );
 			}
 		}
 		var answer = await this.awi.system.findFiles( args, basket, control );
 		if ( !answer.isSuccess() )
-			return this.newError( { message: 'awi:not-found' } );
+			return this.newError( { message: 'awi:not-found' }, { stack: new Error().stack } );
 
 		if ( answer.isSuccess() === '1' )
 			return await playIt( answer.fileList[ 0 ], answer.fileList );
@@ -85,7 +85,7 @@ class BubbleRun extends BubbleBase
 		], control );
 		if ( param.isSuccess() )
 			return await playIt( answer.fileList[ param.choice - 1 ], answer.fileList );
-		return this.newAnswer( { files: answer.fileList, fileRan: '' } );
+		return this.newAnswer( { message: 'awi:cancelled' }, { noLog: true } );
 	}
 	async playback( args, basket, control )
 	{

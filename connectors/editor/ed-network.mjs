@@ -91,7 +91,7 @@ export default class EdNetwork extends EdBase
 			}
 		}
 
-		return this.newError( { message: 'awi:command-not-found', data: message.command } );
+		return this.newError( { message: 'awi:command-not-found', data: message.command }, { stack: new Error().stack } );
 	}
 
 	// AWI commands

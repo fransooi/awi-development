@@ -47,15 +47,7 @@ class CommandLine extends EdBase
 		var self = this;
 		this.readLine.on( 'line', async function( prompt )
 		{
-			// DEBUG LOGGING - Raw console log to bypass any potential print filtering
-			console.log(`[CMD-RAW] Line event: '${prompt}'`);
-
-			// DEBUG LOGGING
-			if (self.awi && self.awi.configuration && self.awi.configuration.getPrompt) {
-				// Only log if verbose >= 4 to avoid noise
-				// Using raw process.stdout to ensure we see it if print fails or filters
-				// console.log(`[CMD-DEBUG] Line received: '${prompt}', noInput: ${self.noInput}, reroute: ${!!self.reroute}`);
-			}
+			self.awi.log(`Line received: '${prompt}', noInput: ${self.noInput}, reroute: ${!!self.reroute}`, { level: 'debug' });
 
 			if ( self.noInput == 0 )
 			{
@@ -63,8 +55,7 @@ class CommandLine extends EdBase
 				self.lastPrompt = false;
 				prompt = prompt.trim();
 				
-				// DEBUG LOGGING 2
-				self.print(`[CMD-DEBUG] Processing line: '${prompt}', reroute: ${!!self.reroute}`, { user: 'debug1', verbose: 4 });
+				self.awi.log(`Processing line: '${prompt}', reroute: ${!!self.reroute}`, { level: 'debug' });
 
 				var basket = self.awi.configuration.getBasket( 'user' );
 				if ( !basket )

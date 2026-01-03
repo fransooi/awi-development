@@ -69,7 +69,7 @@ export default class ConnectorDriveBase extends ConnectorBase
 	{
 		if ( this[ 'command_' + message.command ] )
 			return this[ 'command_' + message.command ]( message.parameters, message, editor );
-		return this.replyError( this.newError( { message: 'awi:command-not-found', data: message.command } ), message, editor );
+		return this.replyError( this.newError( { message: 'awi:command-not-found', data: message.command }, { stack: new Error().stack } ), message, editor );
 	}
 
 	// Common command implementations for all drive connectors

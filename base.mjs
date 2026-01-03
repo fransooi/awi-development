@@ -69,12 +69,13 @@ export default class Base
 		var { message, data, type, functionName } = definition;
 		var answer = new Answer( this, data, message, type );
 		answer.setError( message );
+    if (logData.noLog)
+      return answer;
+    
 		var errorData = {
 			source: 'awi',
 			level: 'error',
-			className: this.className,
-			version: this.version,
-			functionName: functionName,
+			stack: logData.stack,
 			msg: message,
 			...logData
 		};

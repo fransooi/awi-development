@@ -28,7 +28,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 loadEnv({ path: join(__dirname, '.env') });
 
-const databasePrefix = 'TOCOMPLETE_';
+const projectPrefix = 'TOCOMPLETE_';
 const projectName = 'Awi Server';
 
 async function startAwi( prompt, config )
@@ -89,17 +89,9 @@ async function startAwi( prompt, config )
 	process.on( 'SIGINT', shutdown );
 	process.on( 'SIGTERM', shutdown );
 
-	if ( config.verbosity )
-		awi.verbosity = config.verbosity;
 	var answer = await awi.connect( {} );
 	if ( answer.isSuccess() )
 	{
-		if ( config.userVerbosity )
-			awi.configuration.setVerbose( config.userVerbosity );
-
-		if ( awi.http )
-			await awi.http.printStartupBanner();
-
 		await awi.prompt.prompt( { prompt: prompt || '' }, basket, { editor: awi.editor } );
 	}
 	else
@@ -113,7 +105,7 @@ async function startAwi( prompt, config )
 function getArguments()
 {
 	var domain = 'http://localhost:8080';
-    var envDataRoot = process.env.DATA_ROOT;
+  var envDataRoot = process.env[projectPrefix + 'DATA_ROOT'] || process.env.DATA_ROOT;
 	var dataRoot = envDataRoot || './data';
 	var dataPath = envDataRoot || './data';
 	var httpRootDirectory = envDataRoot ? (envDataRoot + '/public') : './data/public';
@@ -128,8 +120,10 @@ function getArguments()
 	var answer =
 	{
 		prompt: '',
-		verbosity: 'info warning error',
+		logFilter: 'info warning error',
 		userVerbosity: 1,
+    projectPrefix: projectPrefix,
+    projectName: projectName,
 		config: {},
 		elements:
 		[
@@ -147,12 +141,12 @@ function getArguments()
       // Database connectors, Supabase = https://supabase.com/
       ////////////////////////////////////////////////////////////////////////////////////
 			{ name: 'connectors/database/supabase', config: { priority: --priority }, options: {
-				databasePrefix: databasePrefix
+				projectPrefix: projectPrefix
 			} },
 			//{ name: 'connectors/database/storage', config: { priority: --priority }, options: {
 			//	fileMode: 'supabase',
-			//	url: process.env[databasePrefix + 'SUPABASE_URL'],
-			//	secretKey: process.env[databasePrefix + 'SUPABASE_SECRET_KEY'],
+			//	url: process.env[projectPrefix + 'SUPABASE_URL'],
+			//	secretKey: process.env[projectPrefix + 'SUPABASE_SECRET_KEY'],
 			//	// Fallback for local file mode (if needed)
 			//	storagePath: storagePath,
 			//	publicUrlPath: publicUrlPath,
@@ -221,7 +215,7 @@ function getArguments()
 				httpsPort: 8080,
 				domain: domain,
 				tlsOptions: {},
-				databasePrefix: databasePrefix,
+				projectPrefix: projectPrefix,
 				projectName: projectName
 			} },
 
@@ -229,10 +223,10 @@ function getArguments()
       // ClouddFlare turnstile for security box (need Cloudflare account)
       ////////////////////////////////////////////////////////////////////////////////////
 			//{ name: 'connectors/network/cloudfare', config: { priority: --priority }, options: {
-			//	turnstileSecret: process.env.CLOUDFARE_TURNSTILE_SECRET
+			//	turnstileSecret: process.env[projectPrefix + 'CLOUDFARE_TURNSTILE_SECRET'] || process.env.CLOUDFARE_TURNSTILE_SECRET
 			//} },
       
-      			////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////////////////////////////////////////////////
 			// Websocket server, can work behind NGINX or/and Cloudflare
 			// Default port is 1033
 			////////////////////////////////////////////////////////////////////////////////////
@@ -254,9 +248,9 @@ function getArguments()
       // text, speech, image, video, generative, RAGs you name it.
       // https://www.edenai.co/
       ////////////////////////////////////////////////////////////////////////////////////
-			{ name: 'connectors/ai/aiedenspeech', config: { priority: --priority }, options: { aiKey: process.env[databasePrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
-			{ name: 'connectors/ai/aiedentext', config: { priority: --priority }, options: { aiKey: process.env[databasePrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
-			{ name: 'connectors/ai/aiedenchat', config: { priority: --priority }, options: { aiKey: process.env[databasePrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
+			{ name: 'connectors/ai/aiedenspeech', config: { priority: --priority }, options: { aiKey: process.env[projectPrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
+			{ name: 'connectors/ai/aiedentext', config: { priority: --priority }, options: { aiKey: process.env[projectPrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
+			{ name: 'connectors/ai/aiedenchat', config: { priority: --priority }, options: { aiKey: process.env[projectPrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
 
       ////////////////////////////////////////////////////////////////////////////////////
       // Commmand line direct interface
@@ -264,7 +258,6 @@ function getArguments()
 			{ name: 'connectors/awi/parser', config: { priority: --priority }, options: {} },
 			{ name: 'connectors/awi/persona', config: { priority: --priority }, options: {} },
 			{ name: 'connectors/awi/prompt', config: { priority: --priority }, options: {} },
-			// { name: 'connectors/thinknotes/thinknotes', config: { priority: --priority }, options: { modulePath: '/Users/fransooa/development/thinkappsai/thinknotes/awi/connectors/thinknotes/thinknotes.mjs', databasePrefix: databasePrefix } },
 			{ name: 'connectors/editor/editor', config: { priority: --priority }, options: {
 				useColors: false,
 				path: './editor',
@@ -310,7 +303,6 @@ function getArguments()
 			answer.prompt += arg;
 		}
 	}
-	console.log('DEBUG: Parsed prompt:', answer.prompt);
 	return { success: !error, data: answer };
 };
 

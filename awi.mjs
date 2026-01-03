@@ -42,7 +42,10 @@ export default class Awi extends Base
 		this.directRemembering = [];
 		this.indirectRemembering = [];
     this.debug = true;
-    this.verbosity = 'info success warning error';
+    this.logFilter = config.logFilter || 'info success warning error';
+    this.userVerbosity = config.userVerbosity || 1;
+    this.projectPrefix = config.projectPrefix || 'TOCOMPLETE_';
+    this.projectName = config.projectName || 'Awi';
 	}
 	async connect( options = {} )
 	{
@@ -166,6 +169,9 @@ export default class Awi extends Base
 		}
 		if ( this.connected )
 		{
+			this.configuration.setVerbose( this.userVerbosity );
+      if ( this.http )
+				await this.http.printStartupBanner();
 			prompt.push( 'Ready.' );
 			answer = this.newAnswer( '', { message: 'Ready.', level: 'success info', functionName: 'connect' } );
 		}
@@ -176,7 +182,7 @@ export default class Awi extends Base
 				var message = 'connector: ' + errorConnectors[ e ].message;
 				this.log( message, { className: errorConnectors[ e ].name, group: errorConnectors[ e ].group, level: 'error' } );
 			}
-			answer = this.newError( { message: 'Initialization failed.', level: 'error', className: 'Awi', functionName: 'connect' } )
+			answer = this.newError( { message: 'Initialization failed.' }, { stack: new Error().stack } )
 		}
 		return answer;
 	}
@@ -213,7 +219,7 @@ export default class Awi extends Base
 				group: group,
 				message: error.message || 'Cannot load connector.'
 			};
-			return this.newError( { message: 'Cannot load connector', data: error } );
+			return this.newError( { message: 'Cannot load connector' }, { stack: new Error().stack } );
 		}
 	}
 	updateConnectorList(errorConnectors)
@@ -267,14 +273,10 @@ export default class Awi extends Base
 	}
 	getConnector( token )
 	{
-		// 1. Look in current instance
 		if ( this[ token ] )
 			return this[ token ];
-		
-		// 2. Delegate to parent if it exists and is not self
 		if ( this.awi && this.awi !== this )
 			return this.awi.getConnector( token );
-
 		return null;
 	}
 	getConnectorByToken( token )
@@ -290,7 +292,7 @@ export default class Awi extends Base
 			if ( awi[ name ] && awi[ name ][ functionName ] )
 				return await awi[ name ][ functionName ]( argsIn );
 		}
-		return this.newError( { message: 'awi:connector-not-found', data: name } );
+		return this.newError( { message: 'awi:connector-not-found', data: name }, { stack: new Error().stack } );
 	}
 	async callConnectors( argsIn = {}, basket = {}, control )
 	{
@@ -325,7 +327,7 @@ export default class Awi extends Base
 			}
 		}
 		if ( errors.length > 0 )
-			return this.newError( { message: 'awi:connector-error', data: errors } );
+			return this.newError( { message: 'awi:connector-error', data: errors }, { stack: new Error().stack } );
 		return this.newAnswer( answer );
 	}
 	async callBubbles( argsIn, basket = {}, control )
@@ -346,7 +348,7 @@ export default class Awi extends Base
 			}
 		}
 		if ( errors.length > 0 )
-			return this.newError( { message: 'awi:bubble-error', data: errors } );
+			return this.newError( { message: 'awi:bubble-error', data: errors }, { stack: new Error().stack } );
 		return this.newAnswer( basket )
 	}
 	async executeCommands( args, basket, control )
@@ -398,7 +400,7 @@ export default class Awi extends Base
 			args[ 0 ] = cleanPrompt;
 		}
 		if ( errors.length > 0 )
-			return this.newError( { message: 'awi:connector-error', data: errors } );
+			return this.newError( { message: 'awi:connector-error', data: errors }, { stack: new Error().stack } );
 		return this.newAnswer( args );
 	}
 
@@ -418,18 +420,18 @@ export default class Awi extends Base
 			this.logging.logDirect( message, params );
 
 		// Output to console
-		if ( this._shouldPrint(params.level, this.verbosity) )
+		if ( this._shouldPrint(params.level, this.logFilter) )
 			this._consolePrint( this._formatLog( message, params ), params );
 	}
-	_shouldPrint(level, verbosity)
+	_shouldPrint(level, logFilter)
 	{
-		var verbosityLevels = verbosity.split( ' ' );
+		var filterLevels = logFilter.split( ' ' );
 		var levels = level.split( ' ' );
 		for ( var l = 0; l < levels.length; l++ )
 		{
-			for ( var v = 0; v < verbosityLevels.length; v++ )
+			for ( var v = 0; v < filterLevels.length; v++ )
 			{
-				if ( levels[ l ] == verbosityLevels[ v ] )
+				if ( levels[ l ] == filterLevels[ v ] )
 					return true;
 			}
 		}
@@ -514,20 +516,12 @@ export default class Awi extends Base
 	}
 	initMemory( memory )
 	{
-		//memory.bubbleHash = {};
-		//for ( var key in memory.bubbleMap )
-		//	memory.bubbleHash[ memory.bubbleMap[ key ] ] = key;
 		return memory;
 	}
 	async save( user )
 	{
 		user = typeof user == 'undefined' ? this.config.user : user;
-		var answer = await this.persona.saveMemories( 'any' );
-		//if ( !answer.isSuccess )
-			return answer;
-		//var conversations = this.utilities.serializeOut( this.prompt, '' );
-		//var path = this.config.getConfigurationPath() + '/' + user + '-';
-		//return await this.system.writeFile( path + 'conversations.js', conversations, { encoding: 'utf8' } );
+		return await this.persona.saveMemories( 'any' );
 	}
 }
 

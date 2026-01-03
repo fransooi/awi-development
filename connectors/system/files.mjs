@@ -53,7 +53,7 @@ class ConnectorFiles extends ConnectorBase
 			if ( answer.isError() )
 				return this.newAnswer( path );
 		}
-		return this.newError( { message: 'awi:cannot-create-temp-path', data: base + '/' +extension } );
+		return this.newError( { message: 'awi:cannot-create-temp-path', data: base + '/' +extension }, { stack: new Error().stack } );
 	}
 	async getTempFilename(path, base, extension )
 	{
@@ -66,7 +66,7 @@ class ConnectorFiles extends ConnectorBase
 			if ( !answer.isSuccess() )
 				return this.newAnswer( name );
 		}
-		return this.newError( { message: 'awi:cannot-create-temp-path', data: path + '/' + base + '.' + extension } );
+		return this.newError( { message: 'awi:cannot-create-temp-path', data: path + '/' + base + '.' + extension }, { stack: new Error().stack } );
 	}
 
 	async getPaths( file )
@@ -124,7 +124,7 @@ class ConnectorFiles extends ConnectorBase
 				}
 				catch( err )
 				{
-					return self.newError( { message: 'awi:cannot-read-file', data: path } );
+					return self.newError( { message: 'awi:cannot-read-file', data: path }, { stack: new Error().stack } );
 				}
 			}
 			else if ( options.encoding == 'arraybuffer' )
@@ -135,11 +135,11 @@ class ConnectorFiles extends ConnectorBase
 				}
 				catch( err )
 				{
-					return self.newError( { message: 'awi:cannot-read-file', data: path } );
+					return self.newError( { message: 'awi:cannot-read-file', data: path }, { stack: new Error().stack } );
 				}
 			}
 		}
-		return this.newError( { message: 'awi:file-not-found', data: path } );
+		return this.newError( { message: 'awi:file-not-found', data: path }, { noLog: true } );
 	}
 
 	async loadFile( path, options )
@@ -255,7 +255,7 @@ class ConnectorFiles extends ConnectorBase
 			}
 			return this.newAnswer( tree );
 		}
-		return this.newError( { message: 'awi:cannot-get-directory', data: path } );
+		return this.newError( { message: 'awi:cannot-get-directory', data: path }, { functionName: 'getDirectory', stack: new Error().stack } );
 	}
 	filterFilename( name, wildcards )
 	{
@@ -336,10 +336,10 @@ class ConnectorFiles extends ConnectorBase
     {
       var stats = answer.getValue();
       if (stats.isDirectory())
-        return this.newError( { message: 'awi:is-directory', data: path } );
+        return this.newError( { message: 'awi:is-directory', data: path }, { functionName: 'getFileSize', stack: new Error().stack } );
       return this.newAnswer( stats.size );
     }
-    return this.newError( { message: 'awi:file-not-found', data: path } );
+    return this.newError( { message: 'awi:file-not-found', data: path }, { functionName: 'getFileSize', stack: new Error().stack } );
   }
 	async getFileInfo( path )
 	{
@@ -422,7 +422,7 @@ class ConnectorFiles extends ConnectorBase
 		}
 		catch( error )
 		{
-			return this.newError( { message: 'awi:cannot-delete-directory', data: error } );
+			return this.newError( { message: 'awi:cannot-delete-directory', data: error }   );
 		}		
 	}
 	async copyDirectory( sourcePath, destinationPath, options )
@@ -537,7 +537,7 @@ class ConnectorFiles extends ConnectorBase
 		}
 		catch( e )
 		{
-			return this.newError( { message: 'awi:illegal-hjson', data: e } );
+			return this.newError( { message: 'awi:illegal-hjson', data: e }, {stack: new Error().stack } );
 		}
 	}
 	async saveHJSON( path, data )
@@ -558,7 +558,7 @@ class ConnectorFiles extends ConnectorBase
 		}
 		catch( e )
 		{
-			return this.newError( { message: 'awi:illegal-json', data: e } );
+			return this.newError( { message: 'awi:illegal-json', data: e }, {stack: new Error().stack } );
 		}
 	}
 	async saveJSON( path, data )
@@ -605,7 +605,7 @@ class ConnectorFiles extends ConnectorBase
 		}
 		catch( e )
 		{
-			return this.newError( { message: 'awi:cannot-create-directory', data: path } );
+			return this.newError( { message: 'awi:cannot-create-directory', data: path }, { stack: new Error().stack } );
 		}
 	}
 	removeBasePath( path, directories )

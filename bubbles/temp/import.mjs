@@ -68,9 +68,9 @@ class BubbleImport extends BubbleBase
 					var path = fileList[ number ].path;
 					return await importFile( path );
 				}
-				return this.newError( { message: 'awi:cancelled' } );
+				return this.newError( { message: 'awi:cancelled' }, { stack: new Error().stack } );
 			}
-			return this.newError( { message: 'awi:no-file-list-found' } );
+			return this.newError( { message: 'awi:no-file-list-found' }, { stack: new Error().stack } );
 		}
 		var answer = await this.awi.language.getImportPaths();
 		var importPaths = answer.paths;
@@ -79,7 +79,7 @@ class BubbleImport extends BubbleBase
 		if ( files.length == 0 )
 		{
 			control.editor.print( [ 'No asset found with that name...' ], { user: 'information' } );
-			return this.newError( { message: 'awi:no-file-list-found' } );
+			return this.newError( { message: 'awi:no-file-list-found' }, { stack: new Error().stack } );
 		}
 		if ( files.length == 1 )
 			return await importFile( files[ 0 ].path );
@@ -96,7 +96,7 @@ class BubbleImport extends BubbleBase
 		} ], control );
 		if ( param.isSuccess() )
 			return await importFile( files[ param.choice - 1 ].path );
-		return this.newError( { message: 'awi:cancelled' } );
+		return this.newError( { message: 'awi:cancelled' }, { noLog: true } );
 	}
 	async playback( args, basket, control )
 	{

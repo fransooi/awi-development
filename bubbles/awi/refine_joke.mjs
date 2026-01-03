@@ -81,10 +81,6 @@ class BubbleRefineJoke extends BubbleBase
 
 		control.editor.print( [ 'Generating joke...', `Prompt: ${prompt}`, `Temp: ${temperature}, MaxTokens: ${max_tokens}` ], { user: 'info' } );
 
-		// Call AI
-		if ( !this.awi.aichat )
-			return this.newError( { message: 'awi:ai-connector-missing' } );
-
 		// Use generate directly to pass temperature and max_tokens
 		var answer = await this.awi.aichat.generate({
 			prompt: prompt,

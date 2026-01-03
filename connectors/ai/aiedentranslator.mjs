@@ -57,14 +57,14 @@ class ConnectorAITranslator extends ConnectorAIBase
 	async command_translate( args )
 	{
 		if ( !this.configuration )
-			return this.newError({ message: 'awi:user-not-connected' } );
+			return this.newError({ message: 'awi:user-not-connected' }, { stack: new Error().stack } );
 
 		var { text, sourceLanguage, targetLanguage, providers } = this.awi.getArgs(
 			[ 'text', 'sourceLanguage', 'targetLanguage', 'providers' ],
 			args, basket,
 			[ '', '', '', [ 'xai' ] ] );        // , 'openai', 'google'
 		if ( !text || !sourceLanguage || !targetLanguage )
-			return this.newError({ message: 'awi:missing-argument', data: 'text, sourceLanguage, targetLanguage' });
+			return this.newError({ message: 'awi:missing-argument', data: 'text, sourceLanguage, targetLanguage' }, { stack: new Error().stack });
 		const data = {
 			providers: providers.join( ',' ),
 			text: text,
@@ -81,7 +81,7 @@ model: ~{providers}~`, {} );
 		}
 
 		if ( !this.configuration )
-			return this.newError({ message: 'awi:configuration_not_found' });
+			return this.newError({ message: 'awi:configuration_not_found' }, { stack: new Error().stack });
 
 		var answer;
 		var self = this;
@@ -109,7 +109,7 @@ model: ~{providers}~`, {} );
 			} )
 			.catch( function( err )
 			{
-				answer = self.newError({ message: 'translate-error', data: err });
+				answer = self.newError({ message: 'translate-error', data: err }, { stack: new Error().stack });
 			} );
 
 		while( !answer )

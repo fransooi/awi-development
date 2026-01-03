@@ -37,7 +37,7 @@ class BubbleError extends BubbleBase
 	async play( args, basket, control )
 	{
 		await super.play( args, basket, control );
-		return this.newError( { message: 'awi:nothing-to-play' } );
+		return this.newError( { message: 'awi:nothing-to-play' }, { stack: new Error().stack } );
 	}
 	async playback( args, basket, control )
 	{

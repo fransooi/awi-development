@@ -69,7 +69,7 @@ export default class ConnectorAgendaBase extends ConnectorBase
 	{
 		if ( this[ 'command_' + message.command ] )
 			return this[ 'command_' + message.command ]( message.parameters, message, editor );
-		return this.replyError( this.newError( { message: 'awi:command-not-found', data: message.command }, { functionName: 'command' } ), message, editor );
+		return this.replyError( this.newError( { message: 'awi:command-not-found', data: message.command }, { stack: new Error().stack } ), message, editor );
 	}
 	getDatabase()
 	{
@@ -146,27 +146,27 @@ export default class ConnectorAgendaBase extends ConnectorBase
 	}
 	async _fetchMeetings(parameters)
 	{
-		return this.newError({ message: '_fetchMeetings not implemented in ' + this.className });
+		return this.newError({ message: '_fetchMeetings not implemented in ' + this.className }, { stack: new Error().stack });
 	}
 	async _createMeeting(parameters)
 	{
-		return this.newError({ message: '_createMeeting not implemented in ' + this.className });
+		return this.newError({ message: '_createMeeting not implemented in ' + this.className }, { stack: new Error().stack });
 	}
 	async _updateMeeting(parameters)
 	{
-		return this.newError({ message: '_updateMeeting not implemented in ' + this.className });
+		return this.newError({ message: '_updateMeeting not implemented in ' + this.className }, { stack: new Error().stack });
 	}
 	async _deleteMeeting(parameters)
 	{
-		return this.newError({ message: '_deleteMeeting not implemented in ' + this.className });
+		return this.newError({ message: '_deleteMeeting not implemented in ' + this.className }, { stack: new Error().stack });
 	}
 	async _getMeeting(parameters)
 	{
-		return this.newError({ message: '_getMeeting not implemented in ' + this.className });
+		return this.newError({ message: '_getMeeting not implemented in ' + this.className }, { stack: new Error().stack });
 	}
 	async _linkRecording(parameters)
 	{
-		return this.newError({ message: '_linkRecording not implemented in ' + this.className });
+		return this.newError({ message: '_linkRecording not implemented in ' + this.className }, { stack: new Error().stack });
 	}
 	_formatDate(date)
 	{

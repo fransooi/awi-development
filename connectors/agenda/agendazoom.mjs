@@ -61,7 +61,7 @@ class ConnectorAgendaZoom extends ConnectorAgendaBase
 			if (!accessToken && userId)
 				accessToken = await this.awi.zoomrtms.getAccessTokenForUser(userId);
 			if (!accessToken)
-				return this.newError({ message: 'Missing Zoom access token (parameters.ztoken or user-linked token)' }, { functionName: '_fetchMeetings' });
+				return this.newError({ message: 'Missing Zoom access token (parameters.ztoken or user-linked token)' }, { stack: new Error().stack });
 
 			const pageSize = Math.min(Math.max(parseInt(parameters.limit ? parameters.limit : 30), 1), 300);
 			const url = `https://api.zoom.us/v2/users/me/meetings?type=upcoming&page_size=${pageSize}`;
@@ -100,7 +100,7 @@ class ConnectorAgendaZoom extends ConnectorAgendaBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-list-error', data: error }, { functionName: '_fetchMeetings' });
+			return this.newError({ message: 'awi:agenda-list-error', data: error }, { stack: new Error().stack });
 		}
 	}
 
@@ -130,7 +130,7 @@ class ConnectorAgendaZoom extends ConnectorAgendaBase
 			if (!accessToken && this.awi.zoomrtms && this.awi.zoomrtms.getTestAccessToken)
 				accessToken = zoomrtms.getTestAccessToken();
 			if (!accessToken)
-				return this.newError({ message: 'awi:agenda-get-error', data: 'Missing Zoom access token (parameters.ztoken or user-linked token)' }, { functionName: '_getMeeting' });
+				return this.newError({ message: 'awi:agenda-get-error', data: 'Missing Zoom access token (parameters.ztoken or user-linked token)' }, { stack: new Error().stack });
 			const meetingId = encodeURIComponent(parameters.meetingId);
 			const url = `https://api.zoom.us/v2/meetings/${meetingId}`;
 			const resp = await fetch(url, {
@@ -164,11 +164,11 @@ class ConnectorAgendaZoom extends ConnectorAgendaBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-get-error', data: error }, { functionName: '_getMeeting' });
+			return this.newError({ message: 'awi:agenda-get-error', data: error }, { stack: new Error().stack });
 		}
 	}
 	async _linkRecording(parameters)
 	{
-		return this.newError({ message: 'awi:agenda-link-error', data: 'Not implemented: Zoom linkRecording' }, { functionName: '_linkRecording' });
+		return this.newError({ message: 'awi:agenda-link-error', data: 'Not implemented: Zoom linkRecording' }, { stack: new Error().stack });
 	}
 }

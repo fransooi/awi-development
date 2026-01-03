@@ -46,7 +46,7 @@ class SouvenirRoot extends SouvenirBase
 	}
 	async extractContent( args, basket, control )
 	{
-		return this.newError({ message: 'awi:not-found' });
+		return this.newError({ message: 'awi:not-found' }, { stack: new Error().stack });
 	}
 	async getContent( args, basket, control )
 	{

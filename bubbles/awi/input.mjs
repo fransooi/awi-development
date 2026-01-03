@@ -91,7 +91,7 @@ class BubbleInput extends BubbleBase
 		control.editor.rerouteInput(
 			function( args )
 			{
-				control.editor.print('DEBUG: Input received: "' + (args && args.prompt ? args.prompt : 'undefined') + '"', { user: 'debug1', verbose: 4 });
+				self.awi.log('Input received: "' + (args && args.prompt ? args.prompt : 'undefined') + '"', { level: 'debug' });
 				var start = 0;
 				var { prompt } = self.awi.getArgs( [ 'prompt' ], args, {}, [ '' ] );
 				var c = self.awi.utilities.getCharacterType( prompt.charAt( start ) );
@@ -230,7 +230,7 @@ class BubbleInput extends BubbleBase
 						{
 							clearInterval( handle );
 							if ( result == '<___cancel___>' )
-								resolve( self.newError( { message: 'awi:cancelled' } ) );
+								resolve( self.newError( { message: 'awi:cancelled' }, { noLog: true } ) );
 							else
 								resolve( self.newAnswer( result ) );
 						}

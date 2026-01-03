@@ -91,7 +91,7 @@ class ConnectorConvertors extends ConnectorBase
 	{
 		if ( this[ 'command_' + message.command ] )
 			return this[ 'command_' + message.command ]( message.parameters, message, editor );
-		return this.replyError( this.newError( { message: 'awi:command-not-found', data: message.command }, { functionName: 'command' } ), message, editor );
+		return this.replyError( this.newError( { message: 'awi:command-not-found', data: message.command }, { stack: new Error().stack } ), message, editor );
 	}
 
 	/**
@@ -104,10 +104,10 @@ class ConnectorConvertors extends ConnectorBase
 			const { videoPath, audioPath, format, quality } = parameters;
 
 			if (!videoPath)
-				return this.replyError(this.newError({ message: 'awi:missing-video-path', data: videoPath }, { functionName: 'command_extractAudioFromVideo' }), message, editor);
+				return this.replyError(this.newError({ message: 'awi:missing-video-path', data: videoPath }, { stack: new Error().stack }), message, editor);
 
 			if (!audioPath)
-				return this.replyError(this.newError({ message: 'awi:missing-audio-path', data: audioPath }, { functionName: 'command_extractAudioFromVideo' }), message, editor);
+				return this.replyError(this.newError({ message: 'awi:missing-audio-path', data: audioPath }, { stack: new Error().stack }), message, editor);
 
 			const result = await this.extractAudioFromVideo(
 				videoPath,
@@ -120,7 +120,7 @@ class ConnectorConvertors extends ConnectorBase
 		}
 		catch (error)
 		{
-			return this.replyError(this.newError({ message: 'awi:audio-extraction-error', data: error }, { functionName: 'command_extractAudioFromVideo' }), message, editor);
+			return this.replyError(this.newError({ message: 'awi:audio-extraction-error', data: error }, { stack: new Error().stack }), message, editor);
 		}
 	}
 
@@ -134,7 +134,7 @@ class ConnectorConvertors extends ConnectorBase
 			const { filePath } = parameters;
 
 			if (!filePath)
-				return this.replyError(this.newError({ message: 'awi:missing-file-path', data: filePath }, { functionName: 'command_getMediaDuration' }), message, editor);
+				return this.replyError(this.newError({ message: 'awi:missing-file-path', data: filePath }, { stack: new Error().stack }), message, editor);
 
 			const duration = await this.getMediaDuration(filePath);
 
@@ -142,7 +142,7 @@ class ConnectorConvertors extends ConnectorBase
 		}
 		catch (error)
 		{
-			return this.replyError(this.newError({ message: 'awi:duration-error', data: error }, { functionName: 'command_getMediaDuration' }), message, editor);
+			return this.replyError(this.newError({ message: 'awi:duration-error', data: error }, { stack: new Error().stack }), message, editor);
 		}
 	}
 
@@ -156,7 +156,7 @@ class ConnectorConvertors extends ConnectorBase
 			const { filePath } = parameters;
 
 			if (!filePath)
-				return this.replyError(this.newError({ message: 'awi:missing-file-path', data: filePath }, { functionName: 'command_getMediaInfo' }), message, editor);
+				return this.replyError(this.newError({ message: 'awi:missing-file-path', data: filePath }, { stack: new Error().stack }), message, editor);
 
 			const info = await this.getMediaInfo(filePath);
 
@@ -164,7 +164,7 @@ class ConnectorConvertors extends ConnectorBase
 		}
 		catch (error)
 		{
-			return this.replyError(this.newError({ message: 'awi:media-info-error', data: error }, { functionName: 'command_getMediaInfo' } ), message, editor);
+			return this.replyError(this.newError({ message: 'awi:media-info-error', data: error }, { stack: new Error().stack }), message, editor);
 		}
 	}
 
@@ -178,10 +178,10 @@ class ConnectorConvertors extends ConnectorBase
 			const { inputPath, outputPath, format, bitrate, sampleRate } = parameters;
 
 			if (!inputPath)
-				return this.replyError(this.newError({ message: 'awi:missing-input-path', data: inputPath }, { functionName: 'command_convertAudioFormat' }), message, editor);
+				return this.replyError(this.newError({ message: 'awi:missing-input-path', data: inputPath }, { stack: new Error().stack }), message, editor);
 
 			if (!outputPath)
-				return this.replyError(this.newError({ message: 'awi:missing-output-path', data: outputPath }, { functionName: 'command_convertAudioFormat' }), message, editor);
+				return this.replyError(this.newError({ message: 'awi:missing-output-path', data: outputPath }, { stack: new Error().stack }), message, editor);
 
 			const result = await this.convertAudioFormat(
 				inputPath,
@@ -195,7 +195,7 @@ class ConnectorConvertors extends ConnectorBase
 		}
 		catch (error)
 		{
-			return this.replyError(this.newError({ message: 'awi:audio-conversion-error', data: error }, { functionName: 'command_convertAudioFormat' }), message, editor);
+			return this.replyError(this.newError({ message: 'awi:audio-conversion-error', data: error }, { stack: new Error().stack }), message, editor);
 		}
 	}
 

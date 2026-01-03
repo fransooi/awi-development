@@ -52,7 +52,7 @@ class ConnectorAIText extends ConnectorAIBase
 	async command_textToSummary( args )
 	{
 		if ( !this.configuration )
-			return this.newError({ message: 'awi:user-not-connected' } );
+			return this.newError({ message: 'awi:user-not-connected' }, { stack: new Error().stack });
 
 		var { text, options } = this.awi.getArgs( [ 'text', 'options' ], args, {}, [
 			'',
@@ -62,7 +62,7 @@ class ConnectorAIText extends ConnectorAIBase
 				output_sentences: 5
 			} ] );
 		if ( !text )
-			return this.newError({ message: 'awi:missing-argument', data: 'text' });
+			return this.newError({ message: 'awi:missing-argument', data: 'text' }, { stack: new Error().stack });
 
 		var providersToSend = '';
 		for (var p = 0; p < options.providers.length; p++)
@@ -103,7 +103,7 @@ class ConnectorAIText extends ConnectorAIBase
 				} )
 				.catch( function( err )
 				{
-					resolve(self.newError( { message: 'awi:text-to-summary-error', data: err } ));
+					resolve(self.newError( { message: 'awi:text-to-summary-error', data: err }, { stack: new Error().stack } ));
 				});
 		});
 	}
@@ -131,7 +131,7 @@ class ConnectorAIText extends ConnectorAIBase
 	async command_chatCompletion( args )
 	{
 		if ( !this.configuration )
-			return this.newError({ message: 'awi:user-not-connected' }, { functionName: 'command_chatCompletion', source: 'aitext' });
+			return this.newError({ message: 'awi:user-not-connected' }, { stack: new Error().stack });
 
 		var { prompt, systemPrompt, ai } = this.awi.getArgs( [ 'prompt', 'systemPrompt', 'ai' ], args, {}, [
 			'',
@@ -140,7 +140,7 @@ class ConnectorAIText extends ConnectorAIBase
 		]);
 
 		if ( !prompt )
-			return this.newError({ message: 'awi:missing-argument', data: 'prompt' }, { functionName: 'command_chatCompletion', source: 'aitext' });
+			return this.newError({ message: 'awi:missing-argument', data: 'prompt' }, { stack: new Error().stack });
 
 		// Apply defaults for missing ai config values
 		const provider = ai.provider || 'openai';
@@ -235,7 +235,9 @@ class ConnectorAIText extends ConnectorAIBase
 						else
 						{
 							self.awi.log( 'Chat completion no response (fallback model)', { source: 'aitext', level: 'warning', functionName: 'command_chatCompletion', model: retryModel, response: JSON.stringify(response.data)?.slice(0, 2000) } );
-							resolve( self.newError({ message: 'awi:chat-completion-no-response', data: retryModel }, { functionName: 'command_chatCompletion', source: 'aitext' }));
+							resolve( self.newError(
+                { message: 'awi:chat-completion-no-response', data: retryModel }, 
+                { stack: new Error().stack }));
 						}
 					})
 					.catch( function( err2 )
@@ -244,7 +246,7 @@ class ConnectorAIText extends ConnectorAIBase
 						self.awi.log( 'Chat completion error (fallback model)', { source: 'aitext', level: 'error', functionName: 'command_chatCompletion', error: errMsg2 } );
 						resolve( self.newError(
 							{ message: 'awi:chat-completion-error', data: errMsg2 },
-							{ functionName: 'command_chatCompletion', source: 'aitext' },
+							{ stack: new Error().stack },
 							{
 								payload: retryPayload,
 								status: err2.response?.status,
@@ -302,7 +304,7 @@ class ConnectorAIText extends ConnectorAIBase
 					self.awi.log( 'Chat completion error', { source: 'aitext', level: 'error', functionName: 'command_chatCompletion', error: errMsg } );
 					resolve( self.newError(
 						{ message: 'awi:chat-completion-error', data: errMsg },
-						{ functionName: 'command_chatCompletion', source: 'aitext' },
+						{ stack: new Error().stack },
 						{
 							payload: payload,
 							status: status,

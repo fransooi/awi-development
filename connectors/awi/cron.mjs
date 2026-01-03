@@ -81,11 +81,11 @@ class ConnectorCron extends ConnectorBase
 				.limit(1);			
 			if (!error) 
 				return this.newAnswer( data );
-			return this.newError( { message: 'cron:table-does-not-exist' }, { functionName: 'ensureTableExists' } );
+			return this.newError( { message: 'cron:table-does-not-exist' }, { stack: new Error().stack } );
 		} 
 		catch (error) 
 		{
-			return this.newError( { message: 'cron:table-does-not-exist', data: error }, { functionName: 'ensureTableExists' } );
+			return this.newError( { message: 'cron:table-does-not-exist', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -178,9 +178,9 @@ class ConnectorCron extends ConnectorBase
 	async command_createTask(parameters, message, editor) 
 	{
 		if (!parameters.connector_token)	
-			return this.replyError(this.newError({ message: 'cron:missing-connector-token', data: parameters.connector_token }, { functionName: 'command_createTask' }), message, editor);		
+			return this.replyError(this.newError({ message: 'cron:missing-connector-token', data: parameters.connector_token }, { stack: new Error().stack }), message, editor);		
 		if (!parameters.execution_time && !parameters.delay_ms)
-			return this.replyError(this.newError({ message: 'cron:missing-execution-time', data: parameters.execution_time }, { functionName: 'command_createTask' }), message, editor);
+			return this.replyError(this.newError({ message: 'cron:missing-execution-time', data: parameters.execution_time }, { stack: new Error().stack }), message, editor);
 		
 		let executionTime;
 		if (parameters.execution_time) {
@@ -215,7 +215,7 @@ class ConnectorCron extends ConnectorBase
 	async command_cancelTask(parameters, message, editor) 
 	{
 		if (!parameters.task_id) 
-			return this.replyError(this.newError({ message: 'cron:missing-task-id', data: parameters.task_id }, { functionName: 'command_cancelTask' }), message, editor);			
+			return this.replyError(this.newError({ message: 'cron:missing-task-id', data: parameters.task_id }, { stack: new Error().stack }), message, editor);			
 		await this.deleteTask(parameters.task_id);
 		return this.replySuccess(this.newAnswer({ success: true }), message, editor);
 	}

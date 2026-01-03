@@ -103,7 +103,7 @@ class ConnectorDriveGoogle extends ConnectorDriveBase
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'awi:google-list-files-failed', data: error }, { functionName: 'command_listFiles' } );
+			return this.newError( { message: 'awi:google-list-files-failed', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -125,7 +125,7 @@ class ConnectorDriveGoogle extends ConnectorDriveBase
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'awi:google-get-file-failed', data: error }, { functionName: 'command_getFile' } );
+			return this.newError( { message: 'awi:google-get-file-failed', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -145,7 +145,7 @@ class ConnectorDriveGoogle extends ConnectorDriveBase
 			});
 			const filePath = await this.awi.files.getTempPath('drive', this.awi.system.getExtensionFromMimeType(fileMetadata.data.mimeType));
 			if (filePath.isError())
-				return this.newError( { message: 'awi:google-download-file-failed', data: filePath.error }, { functionName: 'command_downloadFile' } );
+				return this.newError( { message: 'awi:google-download-file-failed', data: filePath.error }, { stack: new Error().stack } );
 			const destStream = fs.createWriteStream(filePath.data);
 			const response = await this.drive.files.get(
 			{
@@ -166,14 +166,14 @@ class ConnectorDriveGoogle extends ConnectorDriveBase
 						}));
 					})
 					.on('error', (err) => {
-						return this.newError( { message: 'awi:google-download-file-failed', data: err }, { functionName: 'command_downloadFile' } );
+						return this.newError( { message: 'awi:google-download-file-failed', data: err }, { stack: new Error().stack } );
 					})
 					.pipe(destStream);
 			});
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'awi:google-download-file-failed', data: error }, { functionName: 'command_downloadFile' } );
+			return this.newError( { message: 'awi:google-download-file-failed', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -204,7 +204,7 @@ class ConnectorDriveGoogle extends ConnectorDriveBase
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'awi:google-upload-file-failed', data: error }, { functionName: 'command_uploadFile' } );
+			return this.newError( { message: 'awi:google-upload-file-failed', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -231,7 +231,7 @@ class ConnectorDriveGoogle extends ConnectorDriveBase
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'awi:google-create-folder-failed', data: error }, { functionName: 'command_createFolder' } );
+			return this.newError( { message: 'awi:google-create-folder-failed', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -252,7 +252,7 @@ class ConnectorDriveGoogle extends ConnectorDriveBase
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'awi:google-delete-file-failed', data: error }, { functionName: 'command_deleteFile' } );
+			return this.newError( { message: 'awi:google-delete-file-failed', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -276,7 +276,7 @@ class ConnectorDriveGoogle extends ConnectorDriveBase
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'awi:google-rename-file-failed', data: error }, { functionName: 'command_renameFile' } );
+			return this.newError( { message: 'awi:google-rename-file-failed', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -306,7 +306,7 @@ class ConnectorDriveGoogle extends ConnectorDriveBase
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'awi:google-move-file-failed', data: error }, { functionName: 'command_moveFile' } );
+			return this.newError( { message: 'awi:google-move-file-failed', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -341,7 +341,7 @@ class ConnectorDriveGoogle extends ConnectorDriveBase
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'awi:google-search-files-failed', data: error }, { functionName: 'command_searchFiles' } );
+			return this.newError( { message: 'awi:google-search-files-failed', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -371,7 +371,7 @@ class ConnectorDriveGoogle extends ConnectorDriveBase
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'awi:google-watch-folder-failed', data: error }, { functionName: 'command_watchFolder' } );
+			return this.newError( { message: 'awi:google-watch-folder-failed', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -415,7 +415,7 @@ class ConnectorDriveGoogle extends ConnectorDriveBase
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'awi:google-find-meet-recordings-folder-failed', data: error }, { functionName: 'command_findMeetRecordingsFolder' } );
+			return this.newError( { message: 'awi:google-find-meet-recordings-folder-failed', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -447,7 +447,7 @@ class ConnectorDriveGoogle extends ConnectorDriveBase
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'awi:google-poll-meet-recordings-failed', data: error }, { functionName: 'command_pollMeetRecordings' } );
+			return this.newError( { message: 'awi:google-poll-meet-recordings-failed', data: error }, { stack: new Error().stack } );
 		}
 	}
 }

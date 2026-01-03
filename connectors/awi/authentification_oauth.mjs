@@ -57,13 +57,13 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
   async validateToken(parameters)
   {
     const bearer = this._getBearerFromParams(parameters);
-    if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { functionName: 'validateToken' });
+    if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { stack: new Error().stack });
     const validation = await this._validateAndCacheToken(bearer);
-    if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { functionName: 'validateToken' });
+    if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { stack: new Error().stack } );
     const { userId, user } = validation;
     const configAnswer = await this.awi.configuration.loadConfigForUser(userId);
     if (configAnswer.isError() || !configAnswer.getValue())
-      return this.newError({ message: 'awi:account-not-found', data: user.email }, { functionName: 'validateToken' });
+      return this.newError({ message: 'awi:account-not-found', data: user.email }, { stack: new Error().stack });
     return this.newAnswer({ userId, user, config: configAnswer.getValue() });
   }
 	async createAccount(parameters)
@@ -72,13 +72,13 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		const bearer = this._getBearerFromParams(parameters);
 		if (!bearer) {
 			console.log('[AUTH-OAUTH] createAccount - NO BEARER TOKEN');
-			return this.newError({ message: 'awi:invalid-token', data: bearer }, { functionName: 'createAccount' });
+			return this.newError({ message: 'awi:invalid-token', data: bearer }, { stack: new Error().stack });
 		}
 		console.log('[AUTH-OAUTH] createAccount - validating token...');
 		const validation = await this._validateAndCacheToken(bearer);
 		if (!validation.success) {
 			console.log('[AUTH-OAUTH] createAccount - TOKEN VALIDATION FAILED:', validation);
-			return this.newError({ message: 'awi:invalid-token', data: validation }, { functionName: 'createAccount' });
+			return this.newError({ message: 'awi:invalid-token', data: validation }, { stack: new Error().stack });
 		}
 		const { userId, user } = validation;
 		console.log('[AUTH-OAUTH] createAccount - token validated, userId:', userId, 'email:', user.email);
@@ -113,7 +113,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		console.log('[AUTH-OAUTH] createAccount - updateUserConfig returned, isError:', configAnswer.isError(), 'value:', configAnswer.isError() ? configAnswer.error : 'SUCCESS');
 		if (configAnswer.isError()) {
 			console.log('[AUTH-OAUTH] createAccount - CONFIG SAVE FAILED:', JSON.stringify(configAnswer.error));
-			return this.newError({ message: 'awi:account-not-found', data: user.email }, { functionName: 'validateToken' });
+			return this.newError({ message: 'awi:account-not-found', data: user.email }, { stack: new Error().stack });
 		}
 		console.log('[AUTH-OAUTH] createAccount - config saved successfully');
 
@@ -129,13 +129,13 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		};
 		const profileAnswer = await this.awi.database.upsertUserProfile({ userId, profile: profileData, supabaseTokens: parameters.supabaseTokens });
 		if (profileAnswer.isError()) 
-			return this.newError({ message: 'awi:account-not-found', data: user.email }, { functionName: 'validateToken' });
+			return this.newError({ message: 'awi:account-not-found', data: user.email }, { stack: new Error().stack });
 
 		const code = (parameters.googleServerAuthCode || parameters.serverAuthCode || parameters.googleAuthCode || parameters.googleCode || (parameters.accountInfo && (parameters.accountInfo.googleServerAuthCode || parameters.accountInfo.serverAuthCode || parameters.accountInfo.googleAuthCode || parameters.accountInfo.googleCode))) || null;
 		if (code)
 		{
-			const clientId = process.env.GOOGLE_CLIENT_ID || '';
-			const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+			const clientId = process.env[this.awi.projectPrefix + 'GOOGLE_CLIENT_ID'] || process.env.GOOGLE_CLIENT_ID || '';
+			const clientSecret = process.env[this.awi.projectPrefix + 'GOOGLE_CLIENT_SECRET'] || process.env.GOOGLE_CLIENT_SECRET || '';
 			if (clientId && clientSecret)
 			{
 				try
@@ -174,7 +174,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 					}
 				}
 				catch(e){
-					return this.newError({ message: 'awi:error-when-exchanging-token', data: e }, { functionName: 'createAccount' });
+					return this.newError({ message: 'awi:error-when-exchanging-token', data: e }, { stack: new Error().stack });
 				}
 			}
 		}
@@ -223,7 +223,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		}
 		catch(e)
 		{
-			return this.newError({ message: 'awi:google-refresh-token-failed', data: e }, { functionName: 'command_refreshGoogleToken' });
+			return this.newError({ message: 'awi:google-refresh-token-failed', data: e }, { stack: new Error().stack });
 		}
 	}
 	*/
@@ -233,13 +233,13 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		const bearer = this._getBearerFromParams(parameters);
 		if (!bearer) {
 			console.log('[AUTH-OAUTH] loginAccount - NO BEARER TOKEN');
-			return this.newError({ message: 'awi:invalid-token', data: bearer }, { functionName: 'loginAccount' });
+			return this.newError({ message: 'awi:invalid-token', data: bearer }, { stack: new Error().stack });
 		}
 		console.log('[AUTH-OAUTH] loginAccount - validating token...');
 		const validation = await this._validateAndCacheToken(bearer);
 		if (!validation.success) {
 			console.log('[AUTH-OAUTH] loginAccount - TOKEN VALIDATION FAILED:', validation);
-			return this.newError({ message: 'awi:invalid-token', data: validation }, { functionName: 'loginAccount' });
+			return this.newError({ message: 'awi:invalid-token', data: validation }, { stack: new Error().stack });
 		}
 		const { userId, user } = validation;	
 		console.log('[AUTH-OAUTH] loginAccount - token validated, userId:', userId, 'email:', user.email);
@@ -256,7 +256,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 			this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false, verbose: 4 });
 
 			// No config found, signal the client to create an account
-			return this.newError({ message: 'awi:account-not-found', data: user.email }, { functionName: 'loginAccount' });
+			return this.newError({ message: 'awi:account-not-found', data: user.email }, { stack: new Error().stack });
 		}
 		console.log('[AUTH-OAUTH] loginAccount - config found, awiName:', configAnswer.getValue()?.awiName);
 
@@ -309,9 +309,9 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 	async getUserList( parameters )
 	{
 		const bearer = this._getBearerFromParams(parameters);
-		if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { functionName: 'getUserList' });
+		if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { stack: new Error().stack });
 		const validation = await this._validateAndCacheToken(bearer);
-		if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { functionName: 'getUserList' });
+		if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { stack: new Error().stack });
 		var text = 'Get user list -> success (' + parameters.userName + ')\n';
 		this.awi.editor.print(text, { user: 'awi', newLine: true, prompt: false, verbose: 4 });
 
@@ -325,28 +325,28 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 	async loginAwi( awi, parameters )
 	{
 		const bearer = this._getBearerFromParams(parameters);
-		if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { functionName: 'loginAwi' });
+		if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { stack: new Error().stack });
 		const validation = await this._validateAndCacheToken(bearer);
-		if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { functionName: 'loginAwi' });
+		if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { stack: new Error().stack });
 		const { userId } = validation;
 
 		var error;
 		const session = this.activeSessions.get(userId);
 		if (!session || !session.loggedIn) {
-			error = this.newError({ message: 'awi:account-not-logged-in', data: parameters.userName }, { functionName: 'loginAwi' });
+			error = this.newError({ message: 'awi:account-not-logged-in', data: parameters.userName }, { stack: new Error().stack });
 		}
 
 		if (!error && session.loggedInAwi)
-			error = this.newError({ message: 'awi:account-already-logged-in-awi', data: parameters.awiName }, { functionName: 'loginAwi' });
+			error = this.newError({ message: 'awi:account-already-logged-in-awi', data: parameters.awiName }, { stack: new Error().stack });
 
 		// Simple password check
 		if (parameters.password != 'vsoftware' && parameters.password != 'VSoftware')
-			error = this.newError({ message: 'awi:invalid-password', data: parameters.awiName }, { functionName: 'loginAwi' });
+			error = this.newError({ message: 'awi:invalid-password', data: parameters.awiName }, { stack: new Error().stack });
 
 		if (!error) {
 			const answer = await awi.callConnectors(['setUser', '*', { userName: parameters.userName, awiName: parameters.awiName, userId: session.userId }], {}, {});
 			if (answer.isError()) {
-				error = this.newError({ message: 'awi:error-when-logging-in', data: parameters.awiName }, { functionName: 'loginAwi' });
+				error = this.newError({ message: 'awi:error-when-logging-in', data: parameters.awiName }, { stack: new Error().stack });
 			}
 		}
 		if (error) {
@@ -367,9 +367,9 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 	async logoutAwi( awi, parameters )
 	{
 		const bearer = this._getBearerFromParams(parameters);
-		if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { functionName: 'logoutAwi' });
+		if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { stack: new Error().stack });
 		const validation = await this._validateAndCacheToken(bearer);
-		if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { functionName: 'logoutAwi' });
+		if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { stack: new Error().stack });
 		const { userId } = validation;
 
 		const session = this.activeSessions.get(userId);
@@ -384,9 +384,9 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 	async disconnect( awi, parameters )
 	{
 		const bearer = this._getBearerFromParams(parameters);
-		if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { functionName: 'disconnect' });
+		if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { stack: new Error().stack });
 		const validation = await this._validateAndCacheToken(bearer);
-		if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { functionName: 'disconnect' });
+		if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { stack: new Error().stack });
 		const { userId } = validation;
 
 		const session = this.activeSessions.get(userId);
@@ -401,9 +401,9 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 	async deleteAccount(parameters)
 	{
 		const bearer = this._getBearerFromParams(parameters);
-		if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { functionName: 'deleteAccount' });
+		if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { stack: new Error().stack });
 		const validation = await this._validateAndCacheToken(bearer);
-		if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { functionName: 'deleteAccount' });
+		if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { stack: new Error().stack });
 		const { userId } = validation;
 
 		// Clear any local session and token cache
@@ -421,9 +421,9 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 	async getUserInfo(parameters)
 	{
 		const bearer = this._getBearerFromParams(parameters);
-		if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { functionName: 'getUserInfo' });
+		if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { stack: new Error().stack });
 		const validation = await this._validateAndCacheToken(bearer);
-		if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { functionName: 'getUserInfo' });
+		if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { stack: new Error().stack });
 		const { userId } = validation;
 
 		const session = this.activeSessions.get(userId);
@@ -481,9 +481,9 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		if (!userId)
 		{
 			const bearer = this._getBearerFromParams(parameters);
-			if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { functionName: 'setGoogleTokens' });
+			if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { stack: new Error().stack });
 			const validation = await this._validateAndCacheToken(bearer);
-			if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { functionName: 'setGoogleTokens' });
+			if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { stack: new Error().stack });
 			userId = validation.userId;
 		}
 		const t = parameters.tokens || {};
@@ -512,9 +512,9 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		if (!userId)
 		{
 			const bearer = this._getBearerFromParams(parameters);
-			if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { functionName: 'getGoogleAccessToken' });
+			if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { stack: new Error().stack });
 			const validation = await this._validateAndCacheToken(bearer);
-			if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { functionName: 'getGoogleAccessToken' });
+			if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { stack: new Error().stack });
 			userId = validation.userId;
 		}
 
@@ -523,7 +523,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 			return row;
 		const data = row.data;
 		if (!data || !data.access_token) 
-			return this.newError({ message: 'awi:google-access-token-not-found' }, { functionName: 'getGoogleAccessToken' });
+			return this.newError({ message: 'awi:google-access-token-not-found' }, { stack: new Error().stack });
 		// Normalize legacy records where expires_at was stored as a relative duration in ms
 		if (data.expires_at != null && Number(data.expires_at) < 1e12) {
 			const corrected = Date.now() + Number(data.expires_at);
@@ -541,12 +541,12 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		if (!data.expires_at || now < Number(data.expires_at) - minRemainingMs)
 			return this.newAnswer(data.access_token);
 		if (!data.refresh_token) 
-			return this.newError({ message: 'awi:refresh-token-not-found' }, { functionName: 'getGoogleAccessToken' });
+			return this.newError({ message: 'awi:refresh-token-not-found' }, { stack: new Error().stack });
 
-		const clientId = process.env.GOOGLE_CLIENT_ID || '';
-		const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+		const clientId = process.env[this.awi.projectPrefix + 'GOOGLE_CLIENT_ID'] || process.env.GOOGLE_CLIENT_ID || '';
+		const clientSecret = process.env[this.awi.projectPrefix + 'GOOGLE_CLIENT_SECRET'] || process.env.GOOGLE_CLIENT_SECRET || '';
 		if (!clientId || !clientSecret)
-			return this.newError({ message: 'awi:google-client-id-or-secret-not-found' }, { functionName: 'getGoogleAccessToken' });
+			return this.newError({ message: 'awi:google-client-id-or-secret-not-found' }, { stack: new Error().stack });
 		try
 		{
 			const url = 'https://oauth2.googleapis.com/token';
@@ -558,7 +558,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 			});
 			const resp = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
 			if (!resp.ok)
-				return this.newError({ message: 'awi:google-refresh-token-failed', data: body }, { functionName: 'getGoogleAccessToken' });
+				return this.newError({ message: 'awi:google-refresh-token-failed', data: body }, { stack: new Error().stack });
 			const json = await resp.json();
 			const newAccess = json.access_token || data.access_token;
 			const newExpires = now + Math.max(0, (json.expires_in || 3600) * 1000);
@@ -575,7 +575,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		}
 		catch
 		{
-			return this.newError({ message: 'awi:google-refresh-token-failed', data: parameters.user ? parameters.user.email : '' }, { functionName: 'getGoogleAccessToken' });
+			return this.newError({ message: 'awi:google-refresh-token-failed', data: parameters.user ? parameters.user.email : '' }, { stack: new Error().stack });
 		}
 	}
 
@@ -585,9 +585,9 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		if (!userId)
 		{
 			const bearer = this._getBearerFromParams(parameters);
-			if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { functionName: 'setSupabaseTokens' });
+			if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { stack: new Error().stack });
 			const validation = await this._validateAndCacheToken(bearer);
-			if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { functionName: 'setSupabaseTokens' });
+			if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { stack: new Error().stack });
 			userId = validation.userId;
 		}
 		const t = parameters.tokens || {};
@@ -612,9 +612,9 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		if (!userId)
 		{
 			const bearer = this._getBearerFromParams(parameters);
-			if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { functionName: 'getSupabaseAccessToken' });
+			if (!bearer) return this.newError({ message: 'awi:invalid-token', data: bearer }, { stack: new Error().stack });
 			const validation = await this._validateAndCacheToken(bearer);
-			if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { functionName: 'getSupabaseAccessToken' });
+			if (!validation.success) return this.newError({ message: 'awi:invalid-token', data: validation }, { stack: new Error().stack });
 			userId = validation.userId;
 		}
 		const row = await this.awi.database.getNamedConfig({ userId, type: 'supabase_tokens', name: 'default' });
@@ -622,13 +622,13 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 			return row;
 		let data = row.data;
 		if (!data)
-			return this.newError({ message: 'awi:supabase-access-token-not-found' }, { functionName: 'getSupabaseAccessToken' });
+			return this.newError({ message: 'awi:supabase-access-token-not-found' }, { stack: new Error().stack });
 		if (typeof data === 'string')
 		{
 			try { data = JSON.parse(data); } catch {}
 		}
 		if (!data || !data.access_token)
-			return this.newError({ message: 'awi:supabase-access-token-not-found' }, { functionName: 'getSupabaseAccessToken' });
+			return this.newError({ message: 'awi:supabase-access-token-not-found' }, { stack: new Error().stack });
 		if (data.expires_at != null && Number(data.expires_at) < 1e12)
 		{
 			const corrected = Date.now() + Number(data.expires_at);
@@ -644,13 +644,13 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		if (!data.expires_at || now < Number(data.expires_at) - minRemainingMs)
 			return this.newAnswer(data.access_token);
 		if (!data.refresh_token)
-			return this.newError({ message: 'awi:refresh-token-not-found' }, { functionName: 'getSupabaseAccessToken' });
+			return this.newError({ message: 'awi:refresh-token-not-found' }, { stack: new Error().stack });
 		const supaUrl = this.awi.database.url || '';
 		const apiKey = this.awi.database.secretKey || '';
 		if (!supaUrl)
-			return this.newError({ message: 'awi:supabase-url-not-found' }, { functionName: 'getSupabaseAccessToken' });
+			return this.newError({ message: 'awi:supabase-url-not-found' }, { stack: new Error().stack });
 		if (!apiKey)
-			return this.newError({ message: 'awi:supabase-api-key-not-found' }, { functionName: 'getSupabaseAccessToken' });
+			return this.newError({ message: 'awi:supabase-api-key-not-found' }, { stack: new Error().stack });
 		try
 		{
 			const url = `${supaUrl.replace(/\/$/, '')}/auth/v1/token?grant_type=refresh_token`;
@@ -660,7 +660,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 				body: JSON.stringify({ refresh_token: data.refresh_token })
 			});
 			if (!resp.ok)
-				return this.newError({ message: 'awi:supabase-refresh-token-failed', data: resp }, { functionName: 'getSupabaseAccessToken' });
+				return this.newError({ message: 'awi:supabase-refresh-token-failed', data: resp }, { stack: new Error().stack });
 			const json = await resp.json();
 			const newAccess = json.access_token || data.access_token;
 			const newExpires = now + Math.max(0, (json.expires_in || 3600) * 1000);
@@ -675,7 +675,7 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		}
 		catch
 		{
-			return this.newError({ message: 'awi:supabase-refresh-token-failed', data: parameters.user ? parameters.user.email : '' }, { functionName: 'getSupabaseAccessToken' }	);
+			return this.newError({ message: 'awi:supabase-refresh-token-failed', data: parameters.user ? parameters.user.email : '' }, { stack: new Error().stack });
 		}
 	}
 }

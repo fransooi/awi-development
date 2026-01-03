@@ -44,7 +44,7 @@ class BubbleSwitchPersona extends BubbleBase
 		var { token } = this.awi.getArgs( ['token'], inputs, basket, ['awi'] );
 
 		if ( !token )
-			return this.newError( { message: 'awi:missing-parameter', data: 'token' } );
+			return this.newError( { message: 'awi:missing-parameter', data: 'token' }, { stack: new Error().stack } );
 
 		// Call the persona connector to switch
 		// Assuming control.user is the current user name or we get it from config
@@ -64,6 +64,6 @@ class BubbleSwitchPersona extends BubbleBase
 			return result;
 		}
 
-		return this.newError( { message: 'awi:connector-not-found', data: 'persona' } );
+		return this.newError( { message: 'awi:connector-not-found', data: 'persona' }, { stack: new Error().stack } );
 	}
 }

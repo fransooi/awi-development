@@ -70,7 +70,7 @@ class ConnectorNode extends ConnectorBase
 		}
 		catch( e )
 		{
-			return this.newError( { message: 'awi:file-not-found', data: path } );
+			return this.newError( { message: 'awi:file-not-found', data: path }, { stack: new Error().stack } );
 		}
 	}
 	async readChunk( path, start, end )
@@ -87,7 +87,7 @@ class ConnectorNode extends ConnectorBase
 		}
 		catch( e )
 		{
-			return this.newError( { message: 'awi:cannot-read-chunk', data: { path, start, end, error: e.message } } );
+			return this.newError( { message: 'awi:cannot-read-chunk', data: { path, start, end, error: e.message } }, { stack: new Error().stack } );
 		}
 	}
 	async writeFile( path, data, options = {} )
@@ -123,7 +123,7 @@ class ConnectorNode extends ConnectorBase
 		}
 		catch( e )
 		{
-			return this.newError( { message: 'awi:cannot-write-file', data: path } );
+			return this.newError( { message: 'awi:cannot-write-file', data: path }, { stack: new Error().stack } );
 		}
 	}
 	async createReadStream( sourcePath )
@@ -135,7 +135,7 @@ class ConnectorNode extends ConnectorBase
 		}
 		catch( e )
 		{
-			return this.newError( { message: 'awi:cannot-create-read-stream', data: sourcePath } );
+			return this.newError( { message: 'awi:cannot-create-read-stream', data: sourcePath }, { stack: new Error().stack } );
 		}
 	}
 	async closeReadStream( stream )
@@ -147,7 +147,7 @@ class ConnectorNode extends ConnectorBase
 		}
 		catch( e )
 		{
-			return this.newError( { message: 'awi:cannot-close-stream', data: stream } );
+			return this.newError( { message: 'awi:cannot-close-stream', data: stream }, { stack: new Error().stack } );
 		}
 	}
 	async copyFile( sourcePath, destinationPath, options = null )
@@ -160,7 +160,7 @@ class ConnectorNode extends ConnectorBase
 		}
 		catch( err )
 		{
-			return this.newError( { message: 'awi:cannot-copy-file', data: sourcePath + ' to ' + destinationPath } );
+			return this.newError( { message: 'awi:cannot-copy-file', data: sourcePath + ' to ' + destinationPath }, { stack: new Error().stack } );
 		}
 	}
 	async readdir( path )
@@ -172,8 +172,7 @@ class ConnectorNode extends ConnectorBase
 		}
 		catch( e )
 		{
-      console.log('awi:cannot-read-directory', path);
-			return this.newError( { message: 'awi:cannot-read-directory', data: path } );
+			return this.newError( { message: 'awi:cannot-read-directory', data: path }, { stack: new Error().stack } );
 		}
 	}
 	async unlink( path)
@@ -185,8 +184,7 @@ class ConnectorNode extends ConnectorBase
 		}
 		catch
 		{
-      console.log('awi:cannot-delete-file', path);
-			return this.newError( { message: 'awi:cannot-delete-file', data: path } );
+			return this.newError( { message: 'awi:cannot-delete-file', data: path }, { stack: new Error().stack } );
 		}
 	}
 	async rmdir( path, options )
@@ -198,8 +196,7 @@ class ConnectorNode extends ConnectorBase
 		}
 		catch
 		{
-      console.log('awi:cannot-delete-directory', path);
-			return this.newError( { message: 'awi:cannot-delete-directory', data: path } );
+			return this.newError( { message: 'awi:cannot-delete-directory', data: path }, { stack: new Error().stack } );
 		}
 	}
 	async stat( path )
@@ -211,8 +208,7 @@ class ConnectorNode extends ConnectorBase
 		}
 		catch
 		{
-      console.log('awi:file-not-found', path);
-  			return this.newError( { message: 'awi:file-not-found', data: path } );
+			return this.newError( { message: 'awi:file-not-found', data: path }, { stack: new Error().stack } );
 		}
 	}
 	async rename( path, newPath )
@@ -225,8 +221,7 @@ class ConnectorNode extends ConnectorBase
 		}
 		catch( e )
 		{
-      console.log('awi:cannot-rename-file', path, newPath);
-  			return this.newError( { message: 'awi:cannot-rename-file', data: path + ' to ' + newPath } );
+  			return this.newError( { message: 'awi:cannot-rename-file', data: path + ' to ' + newPath }, { stack: new Error().stack } );
 		}
 	}
 	getMimeType( extension )

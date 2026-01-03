@@ -166,7 +166,7 @@ class ConnectorAgendaGoogle extends ConnectorAgendaBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-list-error', data: error }, { functionName: '_fetchMeetings' });
+			return this.newError({ message: 'awi:agenda-list-error', data: error }, { stack: new Error().stack });
 		}
 	}
 
@@ -196,7 +196,7 @@ class ConnectorAgendaGoogle extends ConnectorAgendaBase
 			{
 				let errData = text;
 				try { errData = text ? JSON.parse(text) : text; } catch {}
-				return this.replyError(this.newError({ message: 'awi:meet-create-space-failed', data: errData }, { functionName: 'command_createMeetSpace' }), message, editor);
+				return this.replyError(this.newError({ message: 'awi:meet-create-space-failed', data: errData }, { stack: new Error().stack }), message, editor);
 			}
 			let json = {};
 			try { json = text ? JSON.parse(text) : {}; } catch {}
@@ -209,11 +209,11 @@ class ConnectorAgendaGoogle extends ConnectorAgendaBase
 				meetingCode: json.meetingCode || null,
 				space: json
 			};
-			return this.replySuccess(this.newAnswer(result, { functionName: 'command_createMeetSpace' }), message, editor);
+			return this.replySuccess(this.newAnswer(result, { stack: new Error().stack }), message, editor);
 		}
 		catch (error)
 		{
-			return this.replyError(this.newError({ message: 'awi:meet-create-space-error', data: error }, { functionName: 'command_createMeetSpace' }), message, editor);
+			return this.replyError(this.newError({ message: 'awi:meet-create-space-error', data: error }, { stack: new Error().stack }), message, editor);
 		}
 	}
 
@@ -247,7 +247,7 @@ class ConnectorAgendaGoogle extends ConnectorAgendaBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-create-error', data: error }, { functionName: '_createMeeting' });
+			return this.newError({ message: 'awi:agenda-create-error', data: error }, { stack: new Error().stack });
 		}
 	}
 
@@ -271,7 +271,7 @@ class ConnectorAgendaGoogle extends ConnectorAgendaBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-update-error', data: error }, { functionName: '_updateMeeting' });
+			return this.newError({ message: 'awi:agenda-update-error', data: error }, { stack: new Error().stack });
 		}
 	}
 
@@ -293,7 +293,7 @@ class ConnectorAgendaGoogle extends ConnectorAgendaBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-delete-error', data: error }, { functionName: '_deleteMeeting' });
+			return this.newError({ message: 'awi:agenda-delete-error', data: error }, { stack: new Error().stack });
 		}
 	}
 
@@ -315,7 +315,7 @@ class ConnectorAgendaGoogle extends ConnectorAgendaBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-get-error', data: error }, { functionName: '_getMeeting' });
+			return this.newError({ message: 'awi:agenda-get-error', data: error }, { stack: new Error().stack });
 		}
 	}
 
@@ -351,7 +351,7 @@ class ConnectorAgendaGoogle extends ConnectorAgendaBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-link-error', data: error }, { functionName: '_linkRecording' });
+			return this.newError({ message: 'awi:agenda-link-error', data: error }, { stack: new Error().stack });
 		}
 	}
 

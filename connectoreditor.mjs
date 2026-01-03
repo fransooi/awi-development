@@ -55,7 +55,7 @@ export default class ConnectorEditor extends ConnectorBase
 	{
 		if (this[ 'command_' + message.command ])
 			return this[ 'command_' + message.command ]( message.parameters, message, editor );
-		return this.replyError( this.newError( 'awi:command-not-found', message.command ), message, editor );
+		return this.replyError( this.newError( { message: 'awi:command-not-found', data: message.command }, { stack: new Error().stack } ), message, editor );
 	}
 }
 

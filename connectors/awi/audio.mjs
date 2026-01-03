@@ -47,7 +47,7 @@ class ConnectorAudio extends ConnectorBase
 		}
 		catch( error )
 		{
-			return this.newError({ message: 'awi:audio-convert-error', data: error });
+			return this.newError({ message: 'awi:audio-convert-error', data: error }, { stack: new Error().stack });
 		}
 		return this.newAnswer( response );
 	}

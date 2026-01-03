@@ -49,7 +49,7 @@ class SouvenirDocument extends SouvenirBase
 		var info = this.awi.utilities.compareTwoStrings( this.parameters.text, prompt, control );
 		if ( info.result > 0 )
 			return await this.getContent( args, basket, control );
-		return this.newError({ message: 'awi:not-found' });
+		return this.newError({ message: 'awi:not-found', stack: new Error().stack });
 	}
 	async getContent( args, basket, control )
 	{
@@ -70,7 +70,7 @@ class SouvenirDocument extends SouvenirBase
 			var content = await this.getContent( args, basket, control );
 			return this.newAnswer( { result: info.result, match: info, content: content.basket.documentInfo } );
 		}
-		return this.newError({ message: 'awi:not-found' });
+		return this.newError({ message: 'awi:not-found', stack: new Error().stack });
 	}
 }
 

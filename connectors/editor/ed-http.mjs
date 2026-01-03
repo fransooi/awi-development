@@ -112,7 +112,7 @@ class EdHttp extends EdNetwork
       // Skip whitelist check during account creation (command contains 'createAccount')
       const isAccountCreation = message.command && ( message.command.includes('createAccount') || message.command.includes('registerDevice') );
       if (!isAccountCreation && message.parameters.awiName != 'francois' && message.parameters.awiName != 'richard')
-        return this.replyError(this.newError({ message: 'awi:user-not-allowed', data: session.data.awiName }, { functionName: 'onMessage' }), message);
+        return this.replyError(this.newError({ message: 'awi:user-not-allowed', data: session.data.awiName }, { stack: new Error().stack }), message);
       //////////////////////////////////////////////////////////////////////////
 
 			var answer = await this.dispatchMessage( message );

@@ -41,9 +41,9 @@ class ConnectorAuthentification_Simple extends ConnectorBase
 	async createAccount(parameters)
 	{
 		if ( !parameters.password )
-			return this.newError( { message: 'awi:missing-password' } );
+			return this.newError( { message: 'awi:missing-password' }, { stack: new Error().stack } );
 		if ( this.accounts[ parameters.userName ] )
-			return this.newError( { message: 'awi:account-already-exist', data: parameters.userName } );
+			return this.newError( { message: 'awi:account-already-exist', data: parameters.userName }, { stack: new Error().stack } );
 		this.accounts[ parameters.userName ] = {
 			userName: parameters.userName,
 			password: parameters.password,
@@ -54,7 +54,7 @@ class ConnectorAuthentification_Simple extends ConnectorBase
 		};
 		var answer = await this.saveAccounts();
 		if (!answer.isSuccess())
-			return this.newError( { message: 'awi:error-when-creating-user', data: parameters.userName } );
+			return this.newError( { message: 'awi:error-when-creating-user', data: parameters.userName }, { stack: new Error().stack } );
 		return this.newAnswer({ userName: parameters.userName });
 	}
 	async loginAccount(parameters)
@@ -62,9 +62,9 @@ class ConnectorAuthentification_Simple extends ConnectorBase
 		// Stupid check for the moment
 		var account = this.accounts[parameters.userName];
 		if (!account)
-			return this.newError( { message: 'awi:account-not-found', data: parameters.userName } );
+			return this.newError( { message: 'awi:account-not-found', data: parameters.userName }, { stack: new Error().stack } );
 		if (account.password != parameters.password)
-			return this.newError( { message: 'awi:wrong-password', data: parameters.userName } );
+			return this.newError( { message: 'awi:wrong-password', data: parameters.userName }, { stack: new Error().stack } );
 		account.loggedIn = true;
 		account.key = crypto.randomBytes(64).toString('hex');
 		
@@ -87,9 +87,9 @@ class ConnectorAuthentification_Simple extends ConnectorBase
 	{
 		var account = this.accounts[parameters.userName];
 		if (!account)
-			return this.newError( { message: 'awi:account-not-found', data: parameters.userName } );
+			return this.newError( { message: 'awi:account-not-found', data: parameters.userName }, { stack: new Error().stack } );
 		if (!account.loggedIn)
-			return this.newError( { message: 'awi:account-not-logged-in', data: parameters.userName } );
+			return this.newError( { message: 'awi:account-not-logged-in', data: parameters.userName }, { stack: new Error().stack } );
 		
 		// Get mapped username once
 		const userNameMapped = this.awi.edhttp?.mapUserName(parameters.userName) || parameters.userName;
@@ -125,9 +125,9 @@ class ConnectorAuthentification_Simple extends ConnectorBase
 	{
 		var account = this.accounts[parameters.userName];
 		if (!account)
-			return this.newError( { message: 'awi:account-not-found', data: parameters.userName } );
+			return this.newError( { message: 'awi:account-not-found', data: parameters.userName }, { stack: new Error().stack } );
 		if (!account.loggedIn)
-			return this.newError( { message: 'awi:account-not-logged-in', data: parameters.userName } );
+			return this.newError( { message: 'awi:account-not-logged-in', data: parameters.userName }, { stack: new Error().stack } );
 
 		var config = this.awi.configuration.checkUserConfig( parameters.userName );
 		if ( config )
@@ -155,11 +155,11 @@ class ConnectorAuthentification_Simple extends ConnectorBase
 		if (!account.loggedIn)
 			return this.newError( { message: 'awi:account-not-logged-in', data: parameters.userName } );
 		if ( account.loggedInAwi )
-			return this.newError( { message: 'awi:account-already-logged-in', data: parameters.userName } );
+			return this.newError( { message: 'awi:account-already-logged-in', data: parameters.userName }, { stack: new Error().stack } );
 
 		var answer = await this.awi.callConnectors( [ 'setUser', '*', { userName: parameters.userName } ], {}, {} );
 		if ( answer.isError() )
-			return answer;
+			return this.newError( { message: 'awi:error-when-logging-in-awi', data: parameters.userName }, { stack: new Error().stack } );
 		if ( parameters.configs )
 			this.awi.configuration.setSubConfigs( parameters.configs );
 		account.loggedInAwi = true;
@@ -181,23 +181,23 @@ class ConnectorAuthentification_Simple extends ConnectorBase
 	async deleteAccount(parameters)
 	{
 		if ( !this.accounts[parameters.userName] )
-			return this.newError( { message: 'awi:account-not-found', data: parameters.userName } );
+			return this.newError( { message: 'awi:account-not-found', data: parameters.userName }, { stack: new Error().stack } );
 		var answer = this.logoutAccount( parameters );
 		if ( answer.isError() )
-			return answer;
+			return this.newError( { message: 'awi:error-when-logging-out', data: parameters.userName }, { stack: new Error().stack } );
 		delete this.accounts[parameters.userName];
 		var answer = await this.saveAccounts();
 		if (!answer.isSuccess())
-			return answer;
+			return this.newError( { message: 'awi:error-when-deleting-user', data: parameters.userName }, { stack: new Error().stack } );
 		return this.newAnswer({ userName: parameters.userName });
 	}
 	async getUserInfo(parameters)
 	{
 		var account = this.accounts[parameters.userName];
 		if (!account)
-			return this.newError( { message: 'awi:account-not-found', data: parameters.userName } );
+			return this.newError( { message: 'awi:account-not-found', data: parameters.userName }, { stack: new Error().stack } );
 		if (!account.loggedIn)
-			return this.newError( { message: 'awi:account-not-logged-in', data: parameters.userName } );
+			return this.newError( { message: 'awi:account-not-logged-in', data: parameters.userName }, { stack: new Error().stack } );
 		return this.newAnswer({ accountInfo: account });
 	}
 
@@ -217,7 +217,7 @@ class ConnectorAuthentification_Simple extends ConnectorBase
 			return this.newAnswer({});
 		var jsonEncrypted = await this.awi.files.loadText( path );
 		if (!jsonEncrypted.isSuccess())
-			return this.newError( { message: 'awi:error-when-loading-accounts', data: path } );
+			return this.newError( { message: 'awi:error-when-loading-accounts', data: path }, { stack: new Error().stack } );
 		var json = this.awi.utilities.decrypt( jsonEncrypted.data );
 		try
 		{
@@ -225,7 +225,7 @@ class ConnectorAuthentification_Simple extends ConnectorBase
 		}
 		catch( e )
 		{
-			return this.newError( { message: 'awi:error-when-loading-accounts', data: e } );
+			return this.newError( { message: 'awi:error-when-loading-accounts', data: e }, { stack: new Error().stack } );
 		}
 		return this.newAnswer(this.accounts);
 	}

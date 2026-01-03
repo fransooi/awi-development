@@ -51,7 +51,7 @@ class SouvenirVideo extends SouvenirBase
 			var content = await this.getContent( parameters, basket, control );
 			return { success: 'found', basket: { result: info.result, match: info, content: content.basket.videoInfo } };
 		}
-		return this.newError({ message: 'awi:not-found' });
+		return this.newError({ message: 'awi:not-found' }, { stack: new Error().stack });
 	}
 	async getContent( args, basket, control )
 	{
@@ -64,7 +64,7 @@ class SouvenirVideo extends SouvenirBase
 		var info = this.awi.utilities.matchTwoStrings( this.parameters.text, prompt, control );
 		if ( info.result > 0 )
 			return await this.getContent( args, basket, control );
-		return this.newError({ message: 'awi:not-found' });
+		return this.newError({ message: 'awi:not-found' }, { stack: new Error().stack });
 	}
 }
 

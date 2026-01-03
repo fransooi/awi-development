@@ -59,13 +59,13 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 	{
 		await super.connect( options );
 
-		this.databasePrefix = options.databasePrefix || '';
+		this.projectPrefix = options.projectPrefix || options.databasePrefix || '';
 		this.bootstrapFailed = false;
 		
 		// Resolve credentials: prefer options, then env vars with prefix, then defaults
-		this.url = options.url || process.env[this.databasePrefix + 'SUPABASE_URL'] || this.url;
-		this.secretKey = options.secretKey || process.env[this.databasePrefix + 'SUPABASE_SECRET_KEY'] || this.secretKey;
-		this.serviceRoleKey = options.serviceRoleKey || process.env[this.databasePrefix + 'SUPABASE_SERVICE_ROLE_KEY'] || this.serviceRoleKey;
+		this.url = options.url || process.env[this.projectPrefix + 'SUPABASE_URL'] || this.url;
+		this.secretKey = options.secretKey || process.env[this.projectPrefix + 'SUPABASE_SECRET_KEY'] || this.secretKey;
+		this.serviceRoleKey = options.serviceRoleKey || process.env[this.projectPrefix + 'SUPABASE_SERVICE_ROLE_KEY'] || this.serviceRoleKey;
 
 		if ( !this.url || !this.secretKey )
 		{
@@ -193,17 +193,17 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 		const st = parameters?.supabaseTokens || {};
 		const bearer = st.client_token || st.access_token || null;
 		if (!await this.validateToken(bearer))
-			return this.replyError( this.newError( { message: 'supabase:invalid-token', data: bearer }, { functionName: 'command_signOut' } ), message, editor );
+			return this.replyError( this.newError( { message: 'supabase:invalid-token', data: bearer }, { stack: new Error().stack } ), message, editor );
 		try
 		{
 			const { error } = await this.supabase.auth.signOut();
 			if (!error)
-				return this.replySuccess( this.newAnswer( {}, { functionName: 'command_signOut' } ), message, editor );
-			return this.replyError( this.newError( { message: 'supabase:signout-error', data: error }, { functionName: 'command_signOut' } ), message, editor );
+				return this.replySuccess( this.newAnswer( {}, { stack: new Error().stack } ), message, editor );
+			return this.replyError( this.newError( { message: 'supabase:signout-error', data: error }, { stack: new Error().stack } ), message, editor );
 		}
 		catch (error)
 		{
-			return this.replyError( this.newError( { message: 'supabase:signout-error', data: error }, { functionName: 'command_signOut' } ), message, editor );
+			return this.replyError( this.newError( { message: 'supabase:signout-error', data: error }, { stack: new Error().stack } ), message, editor );
 		}
 	}
 
@@ -219,12 +219,12 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 				.eq('user_id', userId)
 				.single();
 			if (error) 
-				return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'getUserConfig' } );
+				return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 			return this.newAnswer(data ? data.main_config : null);
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'getUserConfig' } );
+			return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -242,13 +242,13 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 				.select();
 			if (error) 
 			{
-				return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'updateUserConfig' } );
+				return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 			}
 			return this.newAnswer(true);
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'updateUserConfig' } );
+			return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -266,12 +266,12 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 				.eq('name', name)
 				.single();
 			if (error) 
-				return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'getNamedConfig' } );
+				return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 			return this.newAnswer(data ? data.config : null);
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'getNamedConfig' } );
+			return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -293,13 +293,13 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 				.select();
 			if (error) 
 			{
-				return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'updateNamedConfig' } );
+				return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 			}
 			return this.newAnswer(true);
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'updateNamedConfig' } );
+			return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -319,13 +319,13 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 				// If table missing, just return empty list to avoid boot noise.
 				if (error.code === '42P01' || error.code === 'PGRST205' || (error.message && error.message.includes('PGRST205')))
 					return this.newAnswer([]);
-				return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'getAllUserConfigs' } );
+				return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 			}
 			return this.newAnswer(data);
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'getAllUserConfigs' } );
+			return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -345,13 +345,13 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 				// If table missing, just return empty list to avoid boot noise.
 				if (error.code === '42P01' || error.code === 'PGRST205' || (error.message && error.message.includes('PGRST205')))
 					return this.newAnswer([]);
-				return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'getAllNamedConfigs' } );
+				return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 			}
 			return this.newAnswer(data);
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'getAllNamedConfigs' } );
+			return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -375,18 +375,18 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 
 			const { data, error } = await query;
 			if (error) 
-				return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'queryRecords' } );
+				return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 			return this.newAnswer(data || []);
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'queryRecords' } );
+			return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 		}
 	}
 
 	async insertRecord({ table, record, supabaseTokens = null }) 
 	{
-		if (!this.supabase) return this.newError({ message: 'supabase:not-initialized', data: 'Supabase client not initialized' }, { functionName: 'insertRecord' });
+		if (!this.supabase) return this.newError({ message: 'supabase:not-initialized', data: 'Supabase client not initialized' }, { stack: new Error().stack });
 		try 
 		{
 			let bearer = null;
@@ -399,18 +399,18 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 				.select()
 				.single();
 			if (error) 
-				return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'insertRecord' } );
+				return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 			return this.newAnswer(data);
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'insertRecord' } );
+			return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 		}
 	}
 
 	async updateRecord({ table, filters = [], update, supabaseTokens = null }) 
 	{
-		if (!this.supabase) return this.newError({ message: 'supabase:not-initialized', data: 'Supabase client not initialized' }, { functionName: 'updateRecord' });
+		if (!this.supabase) return this.newError({ message: 'supabase:not-initialized', data: 'Supabase client not initialized' }, { stack: new Error().stack });
 		try 
 		{
 			let bearer = null;
@@ -422,18 +422,18 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 				query = query.filter(filter.column, filter.operator, filter.value);
 			const { data, error } = await query.select().single();
 			if (error) 
-				return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'updateRecord' } );
+				return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 			return this.newAnswer(data);
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'updateRecord' } );
+			return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 		}
 	}
 
 	async deleteRecord({ table, filters = [], supabaseTokens = null }) 
 	{
-		if (!this.supabase) return this.newError({ message: 'supabase:not-initialized', data: 'Supabase client not initialized' }, { functionName: 'deleteRecord' });
+		if (!this.supabase) return this.newError({ message: 'supabase:not-initialized', data: 'Supabase client not initialized' }, { stack: new Error().stack });
 		try 
 		{
 			let bearer = null;
@@ -445,12 +445,12 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 				query = query.filter(filter.column, filter.operator, filter.value);
 			const { error } = await query;
 			if (error) 
-				return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'deleteRecord' } );
+				return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 			return this.newAnswer(true);
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'supabase:query-error', data: error }, { functionName: 'deleteRecord' } );
+			return this.newError( { message: 'supabase:query-error', data: error }, { stack: new Error().stack } );
 		}
 	}
 
@@ -474,10 +474,10 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 		}
 		catch (error)
 		{
-			return this.newError( { message: 'supabase:delete-user-error', data: error }, { functionName: 'deleteUser' } );
+			return this.newError( { message: 'supabase:delete-user-error', data: error }, { stack: new Error().stack } );
 		}
 		if (err) 
-			return this.newError( { message: 'supabase:query-error', data: err }, { functionName: 'deleteUser' } );
+			return this.newError( { message: 'supabase:query-error', data: err }, { stack: new Error().stack } );
 		return this.newAnswer(true);
 	}
 
@@ -500,7 +500,7 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 		catch (error)
 		{
 			if (this.awi && this.awi.log)
-				this.awi.log('Error ensuring ' + table + ' table: ' + (error && error.message ? error.message : String(error)), { functionName: 'ensureTable', level: 'error', source: 'supabase' });
+				this.awi.log('Error ensuring ' + table + ' table: ' + (error && error.message ? error.message : String(error)), { stack: new Error().stack });
 			return false;
 		}
 		return true;
@@ -527,16 +527,16 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'supabase:table-exists-error', data: error }, { functionName: 'tableExists' });
+			return this.newError({ message: 'supabase:table-exists-error', data: error }, { stack: new Error().stack });
 		}
 	}
 
 	// Execute raw SQL using Supabase postgres connection (via pg REST or exec_sql RPC)
 	async executeSQL({ sql })
 	{
-		if (!this.supabase) return this.newError({ message: 'supabase:not-initialized', data: 'Supabase client not initialized' }, { functionName: 'executeSQL' });
+		if (!this.supabase) return this.newError({ message: 'supabase:not-initialized', data: 'Supabase client not initialized' }, { stack: new Error().stack });
 		if (!this.serviceRoleKey)
-			return this.newError({ message: 'supabase:no-service-role-key', data: 'Service role key required for SQL execution' }, { functionName: 'executeSQL' });
+			return this.newError({ message: 'supabase:no-service-role-key', data: 'Service role key required for SQL execution' }, { stack: new Error().stack });
 		
 		// First try the exec_sql RPC function
 		try
@@ -568,7 +568,7 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 				text.includes('Could not find the function'))
 			{
 				if (this.awi && this.awi.log)
-					this.awi.log('exec_sql RPC not found, attempting to bootstrap...', { functionName: 'executeSQL', level: 'info', source: 'supabase' });
+					this.awi.log('exec_sql RPC not found, attempting to bootstrap...', { stack: new Error().stack });
 				const bootstrap = await this.bootstrapExecSQL();
 				if (bootstrap.isError())
 					return bootstrap;
@@ -585,22 +585,22 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 				});
 				if (retry.ok || retry.status === 204)
 					return this.newAnswer({ success: true });
-				return this.newError({ message: 'supabase:sql-error', data: await retry.text() }, { functionName: 'executeSQL' });
+				return this.newError({ message: 'supabase:sql-error', data: await retry.text() }, { stack: new Error().stack });
 			}
-			return this.newError({ message: 'supabase:sql-error', data: text }, { functionName: 'executeSQL' });
+			return this.newError({ message: 'supabase:sql-error', data: text }, { stack: new Error().stack });
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'supabase:sql-error', data: error }, { functionName: 'executeSQL' });
+			return this.newError({ message: 'supabase:sql-error', data: error }, { stack: new Error().stack });
 		}
 	}
 
 	// Bootstrap the exec_sql function using Supabase's pg_graphql or direct SQL endpoint
 	async bootstrapExecSQL()
 	{
-		if (!this.supabase) return this.newError({ message: 'supabase:not-initialized', data: 'Supabase client not initialized' }, { functionName: 'bootstrapExecSQL' });
+		if (!this.supabase) return this.newError({ message: 'supabase:not-initialized', data: 'Supabase client not initialized' }, { stack: new Error().stack });
 		if (!this.serviceRoleKey)
-			return this.newError({ message: 'supabase:no-service-role-key' }, { functionName: 'bootstrapExecSQL' });
+			return this.newError({ message: 'supabase:no-service-role-key' }, { stack: new Error().stack });
 
 		const execSqlFunction = this.getBootstrapSQL();
 
@@ -620,7 +620,7 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 			if (response.ok)
 			{
 				if (this.awi && this.awi.log)
-					this.awi.log('exec_sql function created successfully via /pg/sql', { functionName: 'bootstrapExecSQL', level: 'info', source: 'supabase' });
+					this.awi.log('exec_sql function created successfully via /pg/sql', { stack: new Error().stack });
 				return this.newAnswer({ success: true });
 			}
 
@@ -644,20 +644,18 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 				if (!result.errors)
 				{
 					if (this.awi && this.awi.log)
-						this.awi.log('exec_sql function created successfully via GraphQL', { functionName: 'bootstrapExecSQL', level: 'info', source: 'supabase' });
+						this.awi.log('exec_sql function created successfully via GraphQL', { stack: new Error().stack });
 					return this.newAnswer({ success: true });
 				}
 			}
 
 			// Last resort: log manual instructions and set flag
 			this.bootstrapFailed = true;
-			if (this.awi && this.awi.log)
-				this.awi.log('Could not auto-bootstrap exec_sql. Please run manually in Supabase SQL Editor:\n' + execSqlFunction, { functionName: 'bootstrapExecSQL', level: 'warning', source: 'supabase' });
-			return this.newError({ message: 'supabase:bootstrap-failed', data: 'Manual setup required' }, { functionName: 'bootstrapExecSQL' });
+			return this.newError({ message: 'supabase:bootstrap-failed', data: 'Manual setup required' }, { stack: new Error().stack });
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'supabase:bootstrap-error', data: error }, { functionName: 'bootstrapExecSQL' });
+			return this.newError({ message: 'supabase:bootstrap-error', data: error }, { stack: new Error().stack });
 		}
 	}
 
@@ -724,7 +722,7 @@ class ConnectorSupabase extends ConnectorDatabaseBase
 	// Ensure table exists, create if not (requires service role + exec_sql RPC)
 	async ensureTableWithSQL({ table, createSQL })
 	{
-		if (!this.supabase) return this.newError({ message: 'supabase:not-initialized', data: 'Supabase client not initialized' }, { functionName: 'ensureTableWithSQL' });
+		if (!this.supabase) return this.newError({ message: 'supabase:not-initialized', data: 'Supabase client not initialized' }, { stack: new Error().stack });
 		const exists = await this.tableExists({ table });
 		if (exists.isError())
 			return exists;

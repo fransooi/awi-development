@@ -48,6 +48,6 @@ export default class ConnectorDatabaseBase extends ConnectorBase
 	{
 		if ( this[ 'command_' + message.command ] )
 			return this[ 'command_' + message.command ]( message.parameters, message, editor );
-		return this.replyError( this.newError( { message: 'awi:command-not-found', data: message.command }, { functionName: 'command' } ), message, editor );
+		return this.replyError( this.newError( { message: 'awi:command-not-found', data: message.command }, { stack: new Error().stack, functionName: 'command' } ), message, editor );
 	}
 }

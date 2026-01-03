@@ -73,9 +73,11 @@ class BubbleSetup extends BubbleBase
 		// 2. Test Connection
 		control.editor.print( 'Testing connection...', { user: 'awi', verbose: 4 } );
 		
+		const prefix = this.awi.projectPrefix || '';
+		
 		// Temporarily set for this session
-		process.env.SUPABASE_URL = url;
-		process.env.SUPABASE_SECRET_KEY = key;
+		process.env[prefix + 'SUPABASE_URL'] = url;
+		process.env[prefix + 'SUPABASE_SECRET_KEY'] = key;
 		
 		// Attempt to reconnect database
 		if ( this.awi.database )
@@ -84,7 +86,7 @@ class BubbleSetup extends BubbleBase
 			if ( connectResult.isError() || !this.awi.database.supabase )
 			{
 				control.editor.print( 'Connection failed! Please check your keys.', { user: 'error', verbose: 4 } );
-				return this.newError( { message: 'setup:connection-failed' } );
+				return this.newError( { message: 'setup:connection-failed' }, { stack: new Error().stack } );
 			}
 		}
 
@@ -112,19 +114,19 @@ class BubbleSetup extends BubbleBase
 			let keyFound = false;
 			
 			const newLines = lines.map(line => {
-				if (line.trim().startsWith('SUPABASE_URL=')) {
+				if (line.trim().startsWith(prefix + 'SUPABASE_URL=')) {
 					urlFound = true;
-					return `SUPABASE_URL=${url}`;
+					return `${prefix}SUPABASE_URL=${url}`;
 				}
-				if (line.trim().startsWith('SUPABASE_SECRET_KEY=')) {
+				if (line.trim().startsWith(prefix + 'SUPABASE_SECRET_KEY=')) {
 					keyFound = true;
-					return `SUPABASE_SECRET_KEY=${key}`;
+					return `${prefix}SUPABASE_SECRET_KEY=${key}`;
 				}
 				return line;
 			});
 
-			if (!urlFound) newLines.push(`SUPABASE_URL=${url}`);
-			if (!keyFound) newLines.push(`SUPABASE_SECRET_KEY=${key}`);
+			if (!urlFound) newLines.push(`${prefix}SUPABASE_URL=${url}`);
+			if (!keyFound) newLines.push(`${prefix}SUPABASE_SECRET_KEY=${key}`);
 
 			fs.writeFileSync(envPath, newLines.join('\n'), 'utf8');
 			control.editor.print( 'Configuration saved.', { user: 'success', verbose: 4 } );

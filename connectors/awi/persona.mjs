@@ -65,7 +65,7 @@ export default class ConnectorPersona extends ConnectorBase
 				{
 					if ( token != 'awi' )
 						return await this.setPersona( { token: 'awi' }, basket, control );
-					return this.newError( { message: 'awi:persona-not-found', data: token } );
+					return this.newError( { message: 'awi:persona-not-found', data: token }, { stack: new Error().stack } );
 				}
 			}
 			this.personaToken = token;
@@ -85,7 +85,7 @@ export default class ConnectorPersona extends ConnectorBase
 		}
 		var config = this.awi.configuration.getConfig( userName );
 		if ( !config )
-			return this.newError( { message: 'user-not-found', data: userName } );
+			return this.newError( { message: 'user-not-found', data: userName }, { stack: new Error().stack } );
 		var token = config.persona || 'awi';
 		return this.setPersona( { token: token } );
 	}

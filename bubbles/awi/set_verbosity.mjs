@@ -62,21 +62,18 @@ class BubbleSetVerbosity extends BubbleBase
 		// Clamp to 1-4
 		level = Math.max( 1, Math.min( 4, level ) );
 
-		if ( this.awi.configuration )
-		{
-			this.awi.configuration.setVerbose( level );
-			await this.awi.configuration.saveConfigs();
-			
-			// Feedback based on level
-			let msg = 'Verbosity set to ' + level + ': Normal (Conversation)';
-			if ( level == 2 ) msg = 'Verbosity set to ' + level + ': Verbose (Info & Bubbles)';
-			if ( level == 3 ) msg = 'Verbosity set to ' + level + ': Ultra-verbose (Warnings & Errors)';
-			if ( level == 4 ) msg = 'Verbosity set to ' + level + ': Debug (All)';
+    this.awi.configuration.setVerbose( level );
+    var saved = await this.awi.configuration.saveConfigs();
+    if ( saved.isError() )
+      return saved;
+    
+    // Feedback based on level
+    let msg = 'Verbosity set to ' + level + ': Normal (Conversation)';
+    if ( level == 2 ) msg = 'Verbosity set to ' + level + ': Verbose (Info & Bubbles)';
+    if ( level == 3 ) msg = 'Verbosity set to ' + level + ': Ultra-verbose (Warnings & Errors)';
+    if ( level == 4 ) msg = 'Verbosity set to ' + level + ': Debug (All)';
 
-			control.editor.print( msg, { user: 'awi', verbose: 4 } );
-			return this.newAnswer( { level: level } );
-		}
-
-		return this.newError( { message: 'awi:connector-not-found', data: 'configuration' } );
+    control.editor.print( msg, { user: 'awi', verbose: 4 } );
+    return this.newAnswer( { level: level } );
 	}
 }

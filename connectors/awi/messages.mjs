@@ -212,18 +212,26 @@ class ConnectorMessages extends ConnectorBase
 		// Get rid of empty lines.
 		var { response } = this.awi.getArgs( [ 'response' ], args, basket, [ '' ] );
 		
+    var ok = true;
 		if ( typeof response != 'string' )
 		{
+      ok = false;
 			if ( response && typeof response === 'object' )
 			{
 				if ( response.toString && response.toString() !== '[object Object]' )
-					response = response.toString();
-				else
-					try { response = JSON.stringify( response ); } catch(e) { response = ''; }
+        {
+          ok = true;
+          response = response.toString();
+        } 
 			}
 			else
-				response = String( response || '' );
+      {
+        ok = true;
+        response = String( response || '' );
+      }
 		}
+    if (!ok)
+      response = '';
 			
 		var lines = response.trim().split( '\n' );
 		var newResponse = '';

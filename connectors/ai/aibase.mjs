@@ -66,7 +66,7 @@ export default class ConnectorAIBase extends ConnectorBase
 			return this.newAnswer( true );
 		}
 		if (!this.awi.configuration.getConfig(userName))
-			return this.newError({ message: 'awi:user-not-found', data: userName }, { functionName: 'setUser' });
+			return this.newError({ message: 'awi:user-not-found', data: userName }, { stack: new Error().stack });
 		if ( !this.user || userName != this.user )
 		{
 			this.awiName = awiName;

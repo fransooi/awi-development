@@ -151,7 +151,7 @@ export default class BranchBase extends BubbleBase
 			 !this.awi.classes[ parentClass ][ group ] || 
 			 !this.awi.classes[ parentClass ][ group ][ command.token ] ) {
 			console.error( 'Branch Error: Bubble class not found for', parentClass, group, command.token );
-			return this.awi.newError({ message: 'awi:bubble-not-found', data: { parentClass, group, token: command.token } });
+			return this.awi.newError({ message: 'awi:bubble-not-found', data: { parentClass, group, token: command.token } }, { stack: new Error().stack } );
 		}
 
 		return new this.awi.classes[ parentClass ][ group ][ command.token ].Bubble( this.awi, bubbleConfig );

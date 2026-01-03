@@ -84,7 +84,7 @@ class ConnectorAgendaSupabase extends ConnectorAgendaBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-list-error', data: error }, { functionName: '_fetchMeetings' });
+			return this.newError({ message: 'awi:agenda-list-error', data: error }, { stack: new Error().stack });
 		}
 	}
 
@@ -107,7 +107,7 @@ class ConnectorAgendaSupabase extends ConnectorAgendaBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-create-error', data: error }, { functionName: '_createMeeting' });
+			return this.newError({ message: 'awi:agenda-create-error', data: error }, { stack: new Error().stack });
 		}
 	}
 
@@ -132,7 +132,7 @@ class ConnectorAgendaSupabase extends ConnectorAgendaBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-update-error', data: error }, { functionName: '_updateMeeting' });
+			return this.newError({ message: 'awi:agenda-update-error', data: error }, { stack: new Error().stack });
 		}
 	}
 
@@ -154,7 +154,7 @@ class ConnectorAgendaSupabase extends ConnectorAgendaBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-delete-error', data: error }, { functionName: '_deleteMeeting' });
+			return this.newError({ message: 'awi:agenda-delete-error', data: error }, { stack: new Error().stack });
 		}
 	}
 
@@ -177,7 +177,7 @@ class ConnectorAgendaSupabase extends ConnectorAgendaBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-get-error', data: error }, { functionName: '_getMeeting' });
+			return this.newError({ message: 'awi:agenda-get-error', data: error }, { stack: new Error().stack });
 		}
 	}
 
@@ -203,7 +203,7 @@ class ConnectorAgendaSupabase extends ConnectorAgendaBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-link-error', data: error }, { functionName: '_linkRecording' });
+			return this.newError({ message: 'awi:agenda-link-error', data: error }, { stack: new Error().stack });
 		}
 	}
 

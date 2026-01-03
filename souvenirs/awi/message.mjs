@@ -52,7 +52,7 @@ class SouvenirMessage extends SouvenirBase
 		{
 			return this.newAnswer( { result: info.result, match: info, content: content } );
 		}
-		return this.newError({ message: 'awi:not-found' });
+		return this.newError({ message: 'awi:not-found' }, { stack: new Error().stack });
 	}
 	async getContent( args, basket, control )
 	{
@@ -84,7 +84,7 @@ class SouvenirMessage extends SouvenirBase
 		}
 		if ( foundContent.length > 0 )
 			return this.newAnswer( foundContent );
-		return this.newError({ message: 'awi:not-found' });
+		return this.newError({ message: 'awi:not-found' }, { stack: new Error().stack });
 	}
 }
 

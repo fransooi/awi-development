@@ -91,14 +91,14 @@ class ConnectorStorage extends ConnectorDatabaseBase
 		const st = parameters?.supabaseTokens || {};
 		const bearer = st.client_token || st.access_token || null;
 		if (!await this.validateToken(bearer))
-			return this.replyError( this.newError( { message: 'supabase:invalid-token', data: bearer }, { functionName: 'command_signOut' } ), message, editor );
+			return this.replyError( this.newError( { message: 'supabase:invalid-token', data: bearer }, { stack: new Error().stack } ), message, editor );
 
 		switch (this.fileMode)
 		{
 			case 'supabase':
 				const { error } = await this.supabase.auth.signOut();
 				if (error)
-					return this.replyError( this.newError( { message: 'supabase:signout-error', data: error }, { functionName: 'command_signOut' } ), message, editor );
+					return this.replyError( this.newError( { message: 'supabase:signout-error', data: error }, { stack: new Error().stack } ), message, editor );
 				break;
 			case 'files':
 				break;
@@ -138,7 +138,7 @@ class ConnectorStorage extends ConnectorDatabaseBase
 						// It's a file path, read the file
 						const readResult = await this.awi.system.readFile(parameters.file);
 						if (readResult.isError())
-							return this.replyError(this.newError({ message: 'supabase:read-file-error', data: readResult.message }, { functionName: 'command_uploadFile' }), message, editor);
+							return this.replyError(this.newError({ message: 'supabase:read-file-error', data: readResult.message }, { stack: new Error().stack }), message, editor);
 						fileContent = readResult.data;
 					}
 					else
@@ -153,7 +153,7 @@ class ConnectorStorage extends ConnectorDatabaseBase
 						.from(parameters.bucket)
 						.upload(supabasePath, fileContent, parameters.options);
 					if (error) 
-						return this.replyError(this.newError({ message: 'supabase:upload-error', data: error }, { functionName: 'command_uploadFile' }), message, editor);
+						return this.replyError(this.newError({ message: 'supabase:upload-error', data: error }, { stack: new Error().stack }), message, editor);
 					
 					// Return the path as identifier (without userName prefix for consistency)
 					return this.replySuccess(this.newAnswer({ identifier: parameters.path }), message, editor);
@@ -165,10 +165,10 @@ class ConnectorStorage extends ConnectorDatabaseBase
 					const checkPath = this.awi.system.join(this.storagePath, userPath, parameters.bucket);
 					var answer = this.awi.files.createDirectories(checkPath);
 					if (!answer.isSuccess()) 
-						return this.replyError( this.newError( { message: 'files:create-directories-error', data: answer }, { functionName: 'command_uploadFile' } ), message, editor );
+						return this.replyError( this.newError( { message: 'files:create-directories-error', data: answer }, { stack: new Error().stack } ), message, editor );
 					answer = await this.awi.files.getTempFilename(checkPath, 'storage', extension);
 					if (!answer.isSuccess()) 
-						return this.replyError( this.newError( { message: 'files:get-temp-filename-error', data: answer }, { functionName: 'command_uploadFile' } ), message, editor );
+						return this.replyError( this.newError( { message: 'files:get-temp-filename-error', data: answer }, { stack: new Error().stack } ), message, editor );
 					const newFileName = answer.data;
 					const fullPath = this.awi.system.join(this.storagePath, userPath, parameters.bucket, newFileName);
 					if ( typeof parameters.file == 'string' )
@@ -182,7 +182,7 @@ class ConnectorStorage extends ConnectorDatabaseBase
 		}
 		catch (error)
 		{
-			return this.replyError(this.newError({ message: 'storage:upload-error', data: error.message }, { functionName: 'command_uploadFile' }), message, editor);
+			return this.replyError(this.newError({ message: 'storage:upload-error', data: error.message }, { stack: new Error().stack }), message, editor);
 		}
 	}
 
@@ -200,7 +200,7 @@ class ConnectorStorage extends ConnectorDatabaseBase
 						.from(parameters.bucket)
 						.download(supabasePath);
 					if (error) 
-						return this.replyError(this.newError({ message: 'supabase:download-error', data: error }, { functionName: 'command_downloadFile' }), message, editor);
+						return this.replyError(this.newError({ message: 'supabase:download-error', data: error }, { stack: new Error().stack }), message, editor);
 					const arrayBuffer = await data.arrayBuffer();
 					return this.replySuccess(this.newAnswer(Buffer.from(arrayBuffer)), message, editor);
 
@@ -216,7 +216,7 @@ class ConnectorStorage extends ConnectorDatabaseBase
 		}
 		catch (error)
 		{
-			return this.replyError(this.newError({ message: 'storage:download-error', data: error.message }, { functionName: 'command_downloadFile' }), message, editor);
+			return this.replyError(this.newError({ message: 'storage:download-error', data: error.message }, { stack: new Error().stack }), message, editor);
 		}
 	}
 
@@ -252,7 +252,7 @@ class ConnectorStorage extends ConnectorDatabaseBase
 		}
 		catch (error)
 		{
-			return this.replyError(error, message, editor);
+			return this.replyError(this.newError({ message: 'storage:get-public-url-error', data: error.message }, { stack: new Error().stack }), message, editor);
 		}
 	}
 
@@ -274,7 +274,7 @@ class ConnectorStorage extends ConnectorDatabaseBase
 		}
 		catch (error)
 		{
-			return this.replyError(error, message, editor);
+			return this.replyError(this.newError({ message: 'storage:close-public-url-error', data: error.message }, { stack: new Error().stack }), message, editor);
 		}
 	}
 
@@ -292,7 +292,7 @@ class ConnectorStorage extends ConnectorDatabaseBase
 						.from(parameters.bucket)
 						.remove([supabasePath]);
 					if (error) 
-						return this.replyError(this.newError({ message: 'supabase:delete-error', data: error }, { functionName: 'command_deleteFile' }), message, editor);
+						return this.replyError(this.newError({ message: 'supabase:delete-error', data: error }, { stack: new Error().stack }), message, editor);
 					return this.replySuccess(this.newAnswer(true), message, editor);
 
 			case 'files':
@@ -307,7 +307,7 @@ class ConnectorStorage extends ConnectorDatabaseBase
 		}
 		catch (error)
 		{
-			return this.replyError(error, message, editor);
+			return this.replyError(this.newError({ message: 'storage:delete-error', data: error.message }, { stack: new Error().stack }), message, editor);
 		}
 	}
 
@@ -327,11 +327,11 @@ class ConnectorStorage extends ConnectorDatabaseBase
 						.from(parameters.bucket)
 						.createSignedUrl(filePath, expiresIn);
 					if (error) 
-						return this.replyError(this.newError({ message: 'supabase:signed-url-error', data: error }, { functionName: 'command_getSignedUrl' }), message, editor);
+						return this.replyError(this.newError({ message: 'supabase:signed-url-error', data: error }, { stack: new Error().stack }), message, editor);
 					return this.replySuccess(this.newAnswer({ 
 						signedUrl: data.signedUrl, 
 						expiresIn: expiresIn 
-					}, { functionName: 'command_getSignedUrl' }), message, editor);
+					}, { stack: new Error().stack }), message, editor);
 
 				case 'files':
 					// Generate a unique token for this download
@@ -344,7 +344,7 @@ class ConnectorStorage extends ConnectorDatabaseBase
 					// Verify file exists
 					const exists = await this.awi.system.exists(fullPath);
 					if (!exists.isSuccess())
-						return this.replyError(this.newError({ message: 'storage:file-not-found', data: fullPath }, { functionName: 'command_getSignedUrl' }), message, editor);
+						return this.replyError(this.newError({ message: 'storage:file-not-found', data: fullPath }, { stack: new Error().stack }), message, editor);
 					
 					// Store token with file info
 					this.downloadTokens.set(token, {
@@ -363,12 +363,12 @@ class ConnectorStorage extends ConnectorDatabaseBase
 					return this.replySuccess(this.newAnswer({ 
 						signedUrl: signedUrl, 
 						expiresIn: expiresIn 
-					}, { functionName: 'command_getSignedUrl' }), message, editor);
+					}, { stack: new Error().stack  }), message, editor);
 			}
 		}
 		catch (error)
 		{
-			return this.replyError(this.newError({ message: 'storage:signed-url-error', data: error }, { functionName: 'command_getSignedUrl' }), message, editor);
+			return this.replyError(this.newError({ message: 'storage:signed-url-error', data: error }, { stack: new Error().stack }), message, editor);
 		}
 	}
 

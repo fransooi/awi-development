@@ -72,7 +72,7 @@ class ConnectorAIChat extends ConnectorAIBase
 			this.configuration.aiKey = this.awi.configuration.getUserKey();
 
 		if ( !this.configuration.aiKey )
-			return this.newError({ message: 'awi:ai-key-missing' }, { functionName: 'generate' });
+			return this.newError({ message: 'awi:ai-key-missing' }, { stack: new Error().stack });
 
 		const systemPrompt = options.system || '';
 		const userPrompt = options.prompt || '';
@@ -102,8 +102,6 @@ class ConnectorAIChat extends ConnectorAIBase
 			max_tokens: options.max_tokens || this.configuration.max_completion_tokens || 1000,
 			fallback_providers: '' // EdenAI uses the comma-separated providers list for fallbacks/simultaneous calls
 		};
-
-		// console.log('DEBUG: AIChat Payload:', JSON.stringify(data, null, 2));
 
 		const maxRetries = 5;
 		let lastError = null;
@@ -165,13 +163,13 @@ class ConnectorAIChat extends ConnectorAIBase
 			return silentAnswer;
 		}
 
-		return this.newError(lastError || { message: 'awi:ai-request-failed' }, { functionName: 'generate' });
+		return this.newError(lastError || { message: 'awi:ai-request-failed' }, { stack: new Error().stack });
 	}
 
 	async send( args, basket, control )
 	{
 		if ( !this.configuration.aiKey )
-			return this.newError({ message: 'awi:user-not-connected' }, { functionName: 'send' });
+			return this.newError({ message: 'awi:user-not-connected' }, { stack: new Error().stack });
 
 		var { prompt } = this.awi.getArgs( 'prompt', args, basket, [ '' ] );
 		prompt = prompt.trim();
@@ -192,7 +190,7 @@ class ConnectorAIChat extends ConnectorAIBase
 			
 			return this.newAnswer( response, 'awi:chat-answer' );
 		} catch (e) {
-			return this.newError({ message: 'awi:chat-failed', data: e.message }, { functionName: 'send' });
+			return this.newError({ message: 'awi:chat-failed', data: e.message }, { stack: new Error().stack });
 		}
 	}
 }

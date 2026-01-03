@@ -77,7 +77,7 @@ class ConnectorPrompt extends ConnectorBase
 
 		control.promptOn = ( typeof control.promptOn == 'undefined' ? 0 : control.promptOn );
 		if ( control.promptOn && !recursive )
-			return this.newError( { message: 'awi:busy' } );
+			return this.newError( { message: 'awi:busy' }, { stack: new Error().stack } );
 		control.promptOn++;
 		
 		// Allow system commands to bypass login check

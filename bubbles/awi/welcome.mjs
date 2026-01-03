@@ -187,15 +187,15 @@ class BubbleWelcome extends BubbleBase
 				var saved = await this.awi.configuration.saveConfigs();
 				if ( saved.isSuccess() )
 				{
-					control.editor.print( 'User profile created!', { user: 'success', verbose: 4 } );
+					this.awi.log('User profile created!', { level: 'success' });
 					if ( this.awi.persona )
 						await this.awi.persona.setUser( { userName: config.userName }, basket, control );
 					break; 
 				}
 				else
 				{
-					control.editor.print( 'Failed to save configuration: ' + saved.getPrint(), { user: 'error' } );
-					return this.newError( { message: 'awi:config-save-failed' } );
+					this.awi.log('Failed to save configuration: ' + saved.getPrint(), { level: 'error' });
+					return this.newError( { message: 'awi:config-save-failed' }, { stack: new Error().stack } );
 				}
 			}
 			else
@@ -211,26 +211,26 @@ class BubbleWelcome extends BubbleBase
 						args: {} 
 					}, basket, control );
 					
-					control.editor.print('Password received, logging in...', { user: 'debug1', verbose: 4 });
+					this.awi.log('Password received, logging in...', { level: 'debug' });
 
 					// We accept everything for now as requested
 					
 					// Perform Login
 					await this.awi.configuration.setUser( { userName: lowerInput }, basket, control );
 					
-					control.editor.print('User set, loading persona...', { user: 'debug1', verbose: 4 });
+					this.awi.log('User set, loading persona...', { level: 'debug' });
 
 					// Ensure persona is loaded
 					if ( this.awi.persona )
 						await this.awi.persona.setUser( { userName: lowerInput }, basket, control );
 
-					control.editor.print('Persona loaded.', { user: 'debug1', verbose: 4 });
+					this.awi.log('Persona loaded.', { level: 'debug' });
 
 					break; // Logged in
 				}
 				else
 				{
-					control.editor.print( "User '" + usernameInput + "' not found.", { user: 'error' } );
+					this.awi.log("User '" + usernameInput + "' not found.", { level: 'error' });
 					// Loop continues
 				}
 			}

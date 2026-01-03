@@ -283,7 +283,7 @@ class BubbleDigest extends BubbleBase
 				{
 					control.editor.print( 'Cannot import files of type "' + type + '".', { user: 'error' } );
 					control.editor.print( 'Supported import types: audio, video, messenger, and more to come!', { user: 'awi' } );
-					return this.newError( { message: 'awi:cannot-import' } );
+					return this.newError( { message: 'awi:cannot-import' }, { stack: new Error().stack } );
 				}
 				if ( this[ type ] )
 				{

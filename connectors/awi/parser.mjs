@@ -44,7 +44,7 @@ class ConnectorParser extends ConnectorBase
 		var { tokens } = this.awi.getArgs( [ 'tokens' ], args, {}, [ [] ] );
 		
 		if ( !prompt )
-			return this.newError( { message: 'awi:nothing-to-prompt' } );
+			return this.newError( { message: 'awi:nothing-to-prompt' }, { stack: new Error().stack } );
 
 		// 1. Try mechanical parsing first (fast path for strict syntax)
 		var mechanical = this.tokeniseExpression( { prompt: prompt, tokens: tokens, position: 0 } );
@@ -63,8 +63,6 @@ class ConnectorParser extends ConnectorBase
 			hasSpecificCommand = mechanical.data.tokens.some(t => t.type === 'bubble' && t.token !== 'chat');
 		}
 		
-		// console.log('DEBUG: Mechanical hasSpecificCommand:', hasSpecificCommand);
-
 		if (hasSpecificCommand) {
 			return mechanical;
 		}
@@ -72,11 +70,8 @@ class ConnectorParser extends ConnectorBase
 		// 2. Fallback to Semantic Parsing (Slow path for natural language)
 		// Only if we have an AI connection
 		if (this.awi.aichat) {
-			// console.log('DEBUG: Calling semanticParse...');
 			control.editor.print( '...', { user: 'result', newLine: true } ); // "Thinking" animation
 			return await this.semanticParse(prompt, basket, control);
-		} else {
-			// console.log('DEBUG: No AI Chat connector found.');
 		}
 
 		return mechanical;
@@ -324,7 +319,7 @@ Output ONLY valid JSON.
 				}
 				
 				if ( innerEnd === -1 ) {
-					return this.newError({ message: 'awi:syntax-error-missing-bracket', data: 'Missing closing bracket' });
+					return this.newError({ message: 'awi:syntax-error-missing-bracket', data: 'Missing closing bracket' }, { stack: new Error().stack });
 				}
 				
 				// Recurse on content
@@ -341,7 +336,7 @@ Output ONLY valid JSON.
 			}
 			
 			if ( char === ')' ) {
-				return this.newError({ message: 'awi:syntax-error-extra-bracket', data: 'Unexpected closing bracket' });
+				return this.newError({ message: 'awi:syntax-error-extra-bracket', data: 'Unexpected closing bracket' }, { stack: new Error().stack });
 			}
 
 			// 2. Check for Operators
@@ -394,9 +389,6 @@ Output ONLY valid JSON.
 						// Check if valid bubble
 						let bubbleName = tokenName;
 						let bubbleClass = null;
-
-						// DEBUG: Log bubble lookup
-						// console.log(`[PARSER-DEBUG] Looking up bubble: group='${group}', token='${tokenName}'`);
 
 						// 1. Exact match
 						if ( this.awi.bubbleGroups[ group ] && this.awi.bubbleGroups[ group ][ bubbleName ] ) {
@@ -451,7 +443,7 @@ Output ONLY valid JSON.
 							}
 							
 							if ( argsEnd === -1 ) {
-								return this.newError({ message: 'awi:syntax-error-missing-bracket', data: 'Missing closing bracket for arguments' });
+								return this.newError({ message: 'awi:syntax-error-missing-bracket', data: 'Missing closing bracket for arguments' }, { stack: new Error().stack });
 							}
 							
 							const argsContent = info.prompt.substring( argsStart, argsEnd );
@@ -540,7 +532,7 @@ Output ONLY valid JSON.
 							argScan++;
 						}
 						
-						if ( argsEnd === -1 ) return this.newError({ message: 'awi:syntax-error-missing-bracket', data: 'Missing closing bracket for arguments' });
+						if ( argsEnd === -1 ) return this.newError({ message: 'awi:syntax-error-missing-bracket', data: 'Missing closing bracket for arguments' }, { stack: new Error().stack });
 						
 						const argsContent = info.prompt.substring( argsStart, argsEnd );
 						const inputs = bubble.properties.inputs;

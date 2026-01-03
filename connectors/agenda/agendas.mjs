@@ -69,10 +69,10 @@ class ConnectorAgendas extends ConnectorBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:agenda-add-error', data: agenda }, { functionName: 'addAgenda' });
+			return this.newError({ message: 'awi:agenda-add-error', data: agenda }, { stack: new Error().stack });
 		}
 		if (!agenda)
-			return this.newError({ message: 'awi:agenda-not-found', data: agenda }, { functionName: 'addAgenda' });
+			return this.newError({ message: 'awi:agenda-not-found', data: agenda }, { stack: new Error().stack });
 
 		var answer = await agenda.connect( options );
 		if (answer.isError())
@@ -136,7 +136,7 @@ class ConnectorAgendas extends ConnectorBase
 	{
 		if ( this[ 'command_' + message.command ] )
 			return this[ 'command_' + message.command ]( message.parameters, message, editor );
-		return this.replyError( this.newError({ message: 'awi:command-not-found', data: message.command }, { functionName: 'command' }), message, editor );
+		return this.replyError( this.newError({ message: 'awi:command-not-found', data: message.command }, { stack: new Error().stack }), message, editor );
 	}
 
 	async command_listMeetings(parameters, message, editor)
@@ -166,7 +166,7 @@ class ConnectorAgendas extends ConnectorBase
 		if (parameters.source && this.agendas[parameters.source])
 			targetAgenda = this.agendas[parameters.source];
 		if (!targetAgenda)
-			return this.replyError(this.newError({ message: 'awi:agenda-not-found' }, { functionName: 'command_createMeeting' }), message, editor);
+			return this.replyError(this.newError({ message: 'awi:agenda-not-found' }, { stack: new Error().stack }), message, editor);
 		const result = await targetAgenda.command_createMeeting(parameters);
 		if (result.isError())
 			return this.replyError(result, message, editor);
@@ -198,7 +198,7 @@ class ConnectorAgendas extends ConnectorBase
 			}
 		}
 		if (!targetAgenda)
-			return this.replyError(this.newError({ message: 'awi:meeting-not-found' }, { functionName: 'command_updateMeeting' }), message, editor);
+			return this.replyError(this.newError({ message: 'awi:meeting-not-found' }, { stack: new Error().stack }), message, editor);
 		const result = await targetAgenda.command_updateMeeting(parameters);
 		if (result.isError())
 			return this.replyError(result, message, editor);
@@ -228,7 +228,7 @@ class ConnectorAgendas extends ConnectorBase
 			}
 		}
 		if (!targetAgenda)
-			return this.replyError(this.newError({ message: 'awi:meeting-not-found' }, { functionName: 'command_deleteMeeting' }), message, editor);
+			return this.replyError(this.newError({ message: 'awi:meeting-not-found' }, { stack: new Error().stack }), message, editor);
 		const result = await targetAgenda.command_deleteMeeting(parameters);
 		if (result.isError())
 			return this.replyError(result, message, editor);
@@ -249,7 +249,7 @@ class ConnectorAgendas extends ConnectorBase
 			const result = await agenda.command_getMeeting(parameters);
 			if (result.isSuccess())
 				return this.replySuccess(result, message, editor);
-			return this.replyError(this.newError({ message: 'awi:meeting-not-found' }, { functionName: 'command_getMeeting' }), message, editor);
+			return this.replyError(this.newError({ message: 'awi:meeting-not-found' }, { stack: new Error().stack }), message, editor);
 		}
 	}
 
@@ -276,7 +276,7 @@ class ConnectorAgendas extends ConnectorBase
 			}
 		}
 		if (!targetAgenda)
-			return this.replyError(this.newError({ message: 'awi:meeting-not-found' }, { functionName: 'command_linkRecording' }), message, editor);
+			return this.replyError(this.newError({ message: 'awi:meeting-not-found' }, { stack: new Error().stack }), message, editor);
 		const result = await targetAgenda.command_linkRecording(parameters);
 		if (result.isError())
 			return this.replyError(result, message, editor);

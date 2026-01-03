@@ -28,8 +28,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 loadEnv({ path: join(__dirname, '.env') });
 
-const databasePrefix = 'THINKNOTES_'; // e.g., 'MYPROJECT_'
-const projectName = 'ThinkNotes Server';
+const projectPrefix = 'TOCOMPLETE_'; // e.g., 'MYPROJECT_'
+const projectName = 'Awi Server';
 
 async function startAwi( prompt, config )
 {
@@ -55,16 +55,17 @@ async function startAwi( prompt, config )
 function getArguments()
 {
 	var domain = 'http://localhost:8080';
-	var publicUrlPath = './data/public/temp';
+	var envDataRoot = process.env[projectPrefix + 'DATA_ROOT'] || process.env.DATA_ROOT;
+	var publicUrlPath = (envDataRoot ? envDataRoot : './data') + '/public/temp';
 	var publicUrl = domain + '/temp';
-	var dataRoot = './data';
-	var dataPath = './data';
-	var httpRootDirectory = './data/public';
-	var configurationPath = './data/configs';
-	var logsPath = './data/logs';
-	var storagePath = './data/storage';
-	var tempPath = './data/temp';
-	var propertiesPath = './data/properties';
+	var dataRoot = envDataRoot || './data';
+	var dataPath = envDataRoot || './data';
+	var httpRootDirectory = (envDataRoot ? envDataRoot : './data') + '/public';
+	var configurationPath = (envDataRoot ? envDataRoot : './data') + '/configs';
+	var logsPath = (envDataRoot ? envDataRoot : './data') + '/logs';
+	var storagePath = (envDataRoot ? envDataRoot : './data') + '/storage';
+	var tempPath = (envDataRoot ? envDataRoot : './data') + '/temp';
+	var propertiesPath = (envDataRoot ? envDataRoot : './data') + '/properties';
 	var priority = 100;
 	var answer =
 	{
@@ -95,12 +96,12 @@ function getArguments()
       // Database connectors, Supabase = https://supabase.com/
       ////////////////////////////////////////////////////////////////////////////////////
 			{ name: 'connectors/database/supabase', config: { priority: --priority }, options: {
-				databasePrefix: databasePrefix
+				projectPrefix: projectPrefix
 			} },
 			//{ name: 'connectors/database/storage', config: { priority: --priority }, options: {
 			//	fileMode: 'supabase',
-			//	url: process.env[databasePrefix + 'SUPABASE_URL'],
-			//	secretKey: process.env[databasePrefix + 'SUPABASE_SECRET_KEY'],
+			//	url: process.env[projectPrefix + 'SUPABASE_URL'],
+			//	secretKey: process.env[projectPrefix + 'SUPABASE_SECRET_KEY'],
 			//	// Fallback for local file mode (if needed)
 			//	storagePath: storagePath,
 			//	publicUrlPath: publicUrlPath,
@@ -169,7 +170,7 @@ function getArguments()
 				httpsPort: 8080,
 				domain: domain,
 				tlsOptions: {},
-				databasePrefix: databasePrefix,
+				projectPrefix: projectPrefix,
 				projectName: projectName
 			} },
 
@@ -177,7 +178,7 @@ function getArguments()
       // ClouddFlare turnstile for security box (need Cloudflare account)
       ////////////////////////////////////////////////////////////////////////////////////
 			//{ name: 'connectors/network/cloudfare', config: { priority: --priority }, options: {
-			//	turnstileSecret: process.env.CLOUDFARE_TURNSTILE_SECRET
+			//	turnstileSecret: process.env[projectPrefix + 'CLOUDFARE_TURNSTILE_SECRET'] || process.env.CLOUDFARE_TURNSTILE_SECRET
 			//} },
       
       ////////////////////////////////////////////////////////////////////////////////////
@@ -201,9 +202,9 @@ function getArguments()
       // text, speech, image, video, generative, RAGs you name it.
       // https://www.edenai.co/
       ////////////////////////////////////////////////////////////////////////////////////
-			{ name: 'connectors/ai/aiedenspeech', config: { priority: --priority }, options: { aiKey: process.env[databasePrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
-			{ name: 'connectors/ai/aiedentext', config: { priority: --priority }, options: { aiKey: process.env[databasePrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
-			{ name: 'connectors/ai/aiedenchat', config: { priority: --priority }, options: { aiKey: process.env[databasePrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
+			{ name: 'connectors/ai/aiedenspeech', config: { priority: --priority }, options: { aiKey: process.env[projectPrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
+			{ name: 'connectors/ai/aiedentext', config: { priority: --priority }, options: { aiKey: process.env[projectPrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
+			{ name: 'connectors/ai/aiedenchat', config: { priority: --priority }, options: { aiKey: process.env[projectPrefix + 'EDEN_AI_KEY'] || process.env.EDEN_AI_KEY } },
 
       ////////////////////////////////////////////////////////////////////////////////////
       // Commmand line direct interface

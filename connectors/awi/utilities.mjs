@@ -1374,7 +1374,7 @@ class ConnectorUtilities extends ConnectorBase
 				}
 				answer.window = window;
 			} catch( e ) {
-				answer = this.newError( { message: 'awi:invalid-javascript', data: e } );
+				answer = this.newError( { message: 'awi:invalid-javascript', data: e }, { stack: new Error().stack } );
 			}
 		}
 		return answer;
@@ -1416,7 +1416,7 @@ class ConnectorUtilities extends ConnectorBase
 		}
 		catch(e)
 		{
-			return this.newError( { message: 'awi:illegal-hjson', data: hjsonString } );
+			return this.newError( { message: 'awi:illegal-hjson', data: hjsonString }, { stack: new Error().stack } );
 		}
 	}
 	HJSONStringify( obj )
@@ -1427,7 +1427,7 @@ class ConnectorUtilities extends ConnectorBase
 		}
 		catch(e)
 		{
-			return this.newError( { message: 'awi:illegal-hjson', data: e } );
+			return this.newError( { message: 'awi:illegal-hjson', data: e }, { stack: new Error().stack } );
 		}
 	}
 	JSONParse( jsonString )
@@ -1438,7 +1438,7 @@ class ConnectorUtilities extends ConnectorBase
 		}
 		catch(e)
 		{
-			return this.newError( { message: 'awi:illegal-json', data: jsonString } );
+			return this.newError( { message: 'awi:illegal-json', data: jsonString }, { stack: new Error().stack } );
 		}
 	}
 	JSONStringify( obj )
@@ -1449,7 +1449,7 @@ class ConnectorUtilities extends ConnectorBase
 		}
 		catch(e)
 		{
-			return this.newError( { message: 'awi:illegal-json', data: obj } );
+			return this.newError( { message: 'awi:illegal-json', data: obj }, { stack: new Error().stack } );
 		}
 	}
 	degreeToRadian( angle )

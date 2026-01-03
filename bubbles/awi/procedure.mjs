@@ -51,7 +51,7 @@ class BubbleProcedure extends BubbleBase
 		var { name, param1, param2, param3, param4, param5 } = this.awi.getArgs( [ 'name', 'param1', 'param2', 'param3', 'param4', 'param5' ], args, basket, [ null, null, null, null, null, null ] );
 		
 		if ( !name )
-			return this.newError( { message: 'awi:procedure-name-missing', functionName: 'play' } );
+			return this.newError( { message: 'awi:procedure-name-missing' }, { stack: new Error().stack } );
 
 		let procedureName = "";
 		if ( typeof name.getValue === 'function' )
@@ -60,7 +60,7 @@ class BubbleProcedure extends BubbleBase
 			procedureName = name.value || name;
 
 		if ( !procedureName )
-			return this.newError( { message: 'awi:procedure-name-empty', functionName: 'play' } );
+			return this.newError( { message: 'awi:procedure-name-empty' }, { stack: new Error().stack } );
 
 		procedureName = procedureName.trim();
 
@@ -106,7 +106,7 @@ class BubbleProcedure extends BubbleBase
 		}
 
 		if ( !persona || !persona.procedures || !persona.procedures[ procedureName ] )
-			return this.newError( { message: 'awi:procedure-not-found', data: procedureName, functionName: 'play' } );
+			return this.newError( { message: 'awi:procedure-not-found', data: procedureName }, { stack: new Error().stack } );
 
 		let procDef = persona.procedures[ procedureName ];
 		let steps = [];
@@ -119,7 +119,7 @@ class BubbleProcedure extends BubbleBase
 		}
 
 		if ( !Array.isArray( steps ) || steps.length === 0 )
-			return this.newError( { message: 'awi:procedure-empty', data: procedureName, functionName: 'play' } );
+			return this.newError( { message: 'awi:procedure-empty', data: procedureName }, { stack: new Error().stack } );
 
 		control.editor.print( `Running procedure '${procedureName}' with ${steps.length} steps...`, { user: 'awi' } );
 

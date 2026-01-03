@@ -143,7 +143,7 @@ class ConnectorZip extends ConnectorBase
 		}
 		catch (error)
 		{
-			return this.newError({ message: 'awi:zip-error', data: error }, { functionName: 'zipDirectory' });
+			return this.newError({ message: 'awi:zip-error', data: error }, { stack: new Error().stack });
 		}
 	}
 }

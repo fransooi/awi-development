@@ -470,7 +470,7 @@ class ConnectorAIAssembly extends ConnectorAIBase
 			}
 			catch ( error )
 			{ 
-				return this.newError({ message: 'awi:assemblyai-configuration-not-found', data: error }, { functionName: 'createClient' });
+				return this.newError({ message: 'awi:assemblyai-configuration-not-found', data: error }, { stack: new Error().stack });
 			}
 		}
 		return this.newAnswer( this.client );
@@ -685,7 +685,7 @@ class ConnectorAIAssembly extends ConnectorAIBase
 			return this.replyError(
 				this.newError(
 					{ message: 'awi:assemblyai-missing-key', data: 'Missing AssemblyAI apiKey' },
-					{ functionName: 'command_uploadSound' },
+					{ stack: new Error().stack },
 					{ payload: { hasSoundPath: !!parameters?.soundPath, hasAudioBase64: !!parameters?.audioBase64 } }
 				),
 				message,
@@ -719,7 +719,7 @@ class ConnectorAIAssembly extends ConnectorAIBase
 			return this.replyError(
 				this.newError(
 					{ message: 'awi:assemblyai-upload-error', data: errMsg },
-					{ functionName: 'command_uploadSound' },
+					{ stack: new Error().stack },
 					{
 						payload: { url, hasSoundPath: !!parameters?.soundPath, hasAudioBase64: !!parameters?.audioBase64 },
 						status: err?.response?.status,
@@ -738,7 +738,7 @@ class ConnectorAIAssembly extends ConnectorAIBase
 			return this.replyError(
 				this.newError(
 					{ message: 'awi:assemblyai-missing-key', data: 'Missing AssemblyAI apiKey' },
-					{ functionName: 'command_transcribe' },
+					{ stack: new Error().stack },
 					{ payload: { hasAudioUrl: !!parameters?.audioUrl } }
 				),
 				message,
@@ -748,7 +748,7 @@ class ConnectorAIAssembly extends ConnectorAIBase
 			return this.replyError(
 				this.newError(
 					{ message: 'awi:missing-argument', data: 'audioUrl' },
-					{ functionName: 'command_transcribe' },
+					{ stack: new Error().stack },
 					{ payload: { audioUrl: parameters?.audioUrl || null } }
 				),
 				message,
@@ -798,7 +798,7 @@ class ConnectorAIAssembly extends ConnectorAIBase
 					return this.replyError(
 						this.newError(
 							{ message: 'awi:transcription-error', data: transcriptionResult.error || transcriptionResult },
-							{ functionName: 'command_transcribe' },
+							{ stack: new Error().stack },
 							{
 								payload: { url, audioUrl: parameters.audioUrl, options: parameters.options },
 								status: pollingResponse?.status,
@@ -819,7 +819,7 @@ class ConnectorAIAssembly extends ConnectorAIBase
 			return this.replyError(
 				this.newError(
 					{ message: 'awi:transcription-error', data: errMsg },
-					{ functionName: 'command_transcribe' },
+					{ stack: new Error().stack },
 					{
 						payload: { url, audioUrl: parameters.audioUrl, options: parameters.options },
 						status: error?.response?.status,
@@ -856,7 +856,7 @@ class ConnectorAIAssembly extends ConnectorAIBase
 			return this.replyError(
 				this.newError(
 					{ message: 'awi:summarize-error', data: errMsg },
-					{ functionName: 'command_summarize' },
+					{ stack: new Error().stack },
 					{
 						payload: { url, request: data },
 						status: error?.response?.status,
@@ -903,7 +903,7 @@ class ConnectorAIAssembly extends ConnectorAIBase
 				delete data.context;
 			data = this.getTranscript(parameters, data);
 			if (!data)
-				return this.replyError(this.newError({ message: 'awi:no-transcripted-text-error' }, { functionName: 'command_question' }), message, editor);
+				return this.replyError(this.newError({ message: 'awi:no-transcripted-text-error' }, { stack: new Error().stack }), message, editor);
 
 			const response = await axios.post(url, data, { headers: this.headers });
 			response.data.id = this.awi.utilities.getUniqueIdentifier( {}, 'lemur', 'YYYYMMDD_hhmmss' );
@@ -911,7 +911,7 @@ class ConnectorAIAssembly extends ConnectorAIBase
 			return this.replySuccess(this.newAnswer(response.data), message, editor);
 		} catch (error) {
 			this.dumpError(error, data);
-			return this.replyError(this.newError({ message: 'awi:question-error', data: error.response.data.error }, { functionName: 'command_question' }), message, editor);
+			return this.replyError(this.newError({ message: 'awi:question-error', data: error.response.data.error }, { stack: new Error().stack }), message, editor);
 		}
 	}
 	async command_prompt(parameters, message, editor)
@@ -923,7 +923,7 @@ class ConnectorAIAssembly extends ConnectorAIBase
 				delete data.answer_format;
 			data = this.getTranscript(parameters, data);
 			if (!data)
-				return this.replyError(this.newError({ message: 'awi:no-transcripted-text-error' }, { functionName: 'command_prompt' }), message, editor);
+				return this.replyError(this.newError({ message: 'awi:no-transcripted-text-error' }, { stack: new Error().stack }), message, editor);
 			data.prompt = parameters.prompt;
 			
 			const response = await axios.post(url, data, { headers: this.headers });
@@ -936,7 +936,7 @@ class ConnectorAIAssembly extends ConnectorAIBase
 			return this.replyError(
 				this.newError(
 					{ message: 'awi:prompt-error', data: errMsg },
-					{ functionName: 'command_prompt' },
+					{ stack: new Error().stack },
 					{
 						payload: { url, request: data },
 						status: error?.response?.status,
@@ -961,7 +961,7 @@ class ConnectorAIAssembly extends ConnectorAIBase
 			return this.replySuccess(this.newAnswer(response.data), message, editor);
 		} catch (error) {
 			this.dumpError(error, parameters);
-			return this.replyError(this.newError({ message: 'awi:list-transcripts-error', data: error.response.statusText }, { functionName: 'command_listTranscripts' }), message, editor);
+			return this.replyError(this.newError({ message: 'awi:list-transcripts-error', data: error.response.statusText }, { stack: new Error().stack }), message, editor);
 		}
 	}
 	async command_deleteTranscript(parameters, message, editor)
@@ -977,7 +977,7 @@ class ConnectorAIAssembly extends ConnectorAIBase
 			return this.replySuccess(this.newAnswer(response.data), message, editor);
 		} catch (error) {
 			this.dumpError(error, parameters);
-			return this.replyError(this.newError({ message: 'awi:delete-transcript-error', data: error.response.statusText }, { functionName: 'command_deleteTranscript' }), message, editor);
+			return this.replyError(this.newError({ message: 'awi:delete-transcript-error', data: error.response.statusText }, { stack: new Error().stack }), message, editor);
 		}
 	}
 }

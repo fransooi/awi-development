@@ -92,7 +92,7 @@ class ConnectorConfiguration extends ConnectorBase
 				var split = connectorConfig.name.split('/');
 				var connector = this.awi.connectors[ split[ 1 ] + '-' + split[ 2 ] ];
 				if ( !connector )
-					return this.newError( { message: 'awi:connector-not-found', data: connectorConfig.name }, { functionName: 'setSubConfigs' } );
+					return this.newError( { message: 'awi:connector-not-found', data: connectorConfig.name }, { stack: new Error().stack } );
 				for ( var subConfigKey in connectorConfig.config.subConfigs )
 				{
 					var subConfig = connectorConfig.config.subConfigs[ subConfigKey ];
@@ -181,17 +181,17 @@ class ConnectorConfiguration extends ConnectorBase
 	async getToolConfiguration( toolGroup, toolName )
 	{
 		if ( this.user == '' )
-			return this.newError( { message: 'awi:user-not-connected' }, { functionName: 'getToolConfiguration' } );
+			return this.newError( { message: 'awi:user-not-connected' }, { stack: new Error().stack } );
 		var config = this.getConfig( 'user' );
 		var toolConfig = config.tools[ toolGroup + '-' + toolName ];
 		if ( !toolConfig )
-			return this.newError( { message: 'awi:tool-config-not-found', data: toolGroup + '-' + toolName }, { functionName: 'getToolConfiguration' } );
+			return this.newError( { message: 'awi:tool-config-not-found', data: toolGroup + '-' + toolName }, { stack: new Error().stack } );
 		return this.newAnswer( toolConfig );
 	}
 	async createToolConfiguration( toolGroup, toolName, configuration )
 	{
 		if ( this.user == '' )
-			return this.newError( { message: 'awi:user-not-connected' }, { functionName: 'createToolConfiguration' } );
+			return this.newError( { message: 'awi:user-not-connected' }, { stack: new Error().stack } );
 		var config = this.getConfig( 'user' );
 		config.tools[ toolGroup + '-' + toolName ] = configuration;
 		return this.newAnswer( configuration );
@@ -245,17 +245,12 @@ class ConnectorConfiguration extends ConnectorBase
 	}
 	async saveConfigs( name )
 	{
-		if (!this.awi.database)
-		{ 
-			return this.newError({ message: 'database-connector-not-found' }, { functionName: 'saveConfigs' });
-		}
-
 		if ( name )
 		{
 			name = name.toLowerCase();
 			const userConfig = this.configs[name];
 			if (!userConfig || !userConfig.userId)
-				return this.newError({ message: 'user-config-invalid', data: name }, { functionName: 'saveConfigs' });
+				return this.newError({ message: 'user-config-invalid', data: name }, { stack: new Error().stack });
 
 			// Save the main user config
 			let answer = await this.awi.database.updateUserConfig({ userId: userConfig.userId, config: userConfig });
@@ -296,9 +291,6 @@ class ConnectorConfiguration extends ConnectorBase
 
 	async loadConfigForUser(userId) {
 
-		if (!this.awi.database) {
-			return this.newError({ message: 'database-connector-not-found' }, { functionName: 'loadConfigForUser' }	);
-		}
 		if (this.userIdToConfig[userId]) {
 			return this.newAnswer(this.userIdToConfig[userId]);
 		}
@@ -778,7 +770,7 @@ class ConnectorConfiguration extends ConnectorBase
 	// Exposed functions
 	async setUser( args, basket, control )
 	{
-		if (control && control.editor) control.editor.print('Configuration: setUser called...', { user: 'debug1', verbose: 4 });
+		this.awi.log('Configuration: setUser called...', { level: 'debug' });
 		var { userName, userId } = this.awi.getArgs( [ 'userName', 'userId' ], args, basket, [ '', null ] );
 		userName = userName.trim();
 		if (!userName)
@@ -803,9 +795,9 @@ class ConnectorConfiguration extends ConnectorBase
 		}
 		if ( config )
 		{
-			if (control && control.editor) control.editor.print('Configuration: User config found, loading persona...', { user: 'debug1', verbose: 4 });
+			this.awi.log('Configuration: User config found, loading persona...', { level: 'debug' });
 			var persona = await this.loadConfig( 'persona-' + config.persona );
-			if (control && control.editor) control.editor.print('Configuration: Persona loaded.', { user: 'debug1', verbose: 4 });
+			this.awi.log('Configuration: Persona loaded.', { level: 'debug' });
 			return this.newAnswer( {
 				configuration: {
 					config: config,
@@ -814,7 +806,7 @@ class ConnectorConfiguration extends ConnectorBase
 			}
 			);
 		}
-		if (control && control.editor) control.editor.print('Configuration: User config NOT found.', { user: 'debug1', verbose: 4 });
-		return this.newError( { message: 'awi:user-config-not-found', data: userName } );
+		this.awi.log('Configuration: User config NOT found.', { level: 'error' });
+		return this.newError( { message: 'awi:user-config-not-found', data: userName }, { stack: new Error().stack } );
 	}
 }

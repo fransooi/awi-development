@@ -63,9 +63,9 @@ class ConnectorLogging extends ConnectorEditor
 		catch( _ ) {}
 	}
 
-	formatDirect( source, parameters, verbosity )
+	formatDirect( source, parameters, filter )
 	{
-		try { return this._formatEntry( source === 'http' ? 'http' : 'app', parameters || {}, verbosity || (parameters && parameters.verbosity) || 'low' ); } catch( _ ) { return ''; }
+		try { return this._formatEntry( source === 'http' ? 'http' : 'app', parameters || {}, filter || (parameters && parameters.filter) || 'low' ); } catch( _ ) { return ''; }
 	}
 	_createDirectories( path )
 	{
@@ -115,7 +115,7 @@ class ConnectorLogging extends ConnectorEditor
 			appStream = FS.createWriteStream( Path.join( this.appDir, this.appFilename ), { flags: 'a' } );
 		}
 
-		// Create Pino instances with maximum verbosity; filtering is handled by callers
+    // Create Pino instances with maximum level; filtering is handled by callers
 		this.httpLogger = pino( { level: 'trace' }, httpStream );
 		this.appLogger = pino( { level: 'trace' }, appStream );
 
@@ -129,11 +129,11 @@ class ConnectorLogging extends ConnectorEditor
 		info[ this.token ].commands.formatLog = this.command_formatLog.bind(this);
 		return this.newAnswer( info );
 	}
-	// Map verbosity to Pino level name
-	_mapVerbosityToLevel( verbosity )
+	// Map filter to Pino level name
+	_mapFilterToLevel( filter )
 	{
-		if ( !verbosity ) return 'info';
-		switch ( ('' + verbosity).toLowerCase() )
+		if ( !filter ) return 'info';
+		switch ( ('' + filter).toLowerCase() )
 		{
 			case 'high': return 'trace';
 			case 'medium': return 'debug';
@@ -142,7 +142,7 @@ class ConnectorLogging extends ConnectorEditor
 		}
 	}
 
-	_normalizeLevel( level, verbosity )
+	_normalizeLevel( level, filter )
 	{
 		const s = ( '' + ( level || '' ) ).toLowerCase();
 		if ( s.indexOf( 'error' ) >= 0 ) return 'error';
@@ -150,13 +150,13 @@ class ConnectorLogging extends ConnectorEditor
 		if ( s.indexOf( 'success' ) >= 0 || s.indexOf( 'info' ) >= 0 ) return 'info';
 		if ( s.indexOf( 'debug' ) >= 0 ) return 'debug';
 		if ( s.indexOf( 'trace' ) >= 0 ) return 'trace';
-		return this._mapVerbosityToLevel( verbosity );
+		return this._mapFilterToLevel( filter );
 	}
 
-	_levelThresholdForVerbosity( verbosity )
+	_levelThresholdForFilter( filter )
 	{
 		// Pino levels: trace(10), debug(20), info(30), warn(40), error(50), fatal(60)
-		switch ( ('' + (verbosity || 'low')).toLowerCase() )
+		switch ( ('' + (filter || 'low')).toLowerCase() )
 		{
 			case 'high': return 10;
 			case 'medium': return 20;
@@ -181,9 +181,9 @@ class ConnectorLogging extends ConnectorEditor
 		try { return new Date( epochMs || Date.now() ).toISOString(); } catch( _ ) { return '' + epochMs; }
 	}
 
-	_shouldPrint( verbosity, levelNumber )
+	_shouldPrint( filter, levelNumber )
 	{
-		const min = this._levelThresholdForVerbosity( verbosity );
+		const min = this._levelThresholdForFilter( filter );
 		return ( typeof levelNumber !== 'number' ) ? true : ( levelNumber >= min || levelNumber >= 50 );
 	}
 
@@ -217,12 +217,12 @@ class ConnectorLogging extends ConnectorEditor
 		return parts.join( ' ' );
 	}
 
-	_formatEntry( source, obj, verbosity )
+	_formatEntry( source, obj, filter )
 	{
 		// Compute shown level
-		let levelNumber = ( typeof obj.level === 'number' ) ? obj.level : ( this._levelThresholdForVerbosity( verbosity ) );
+		let levelNumber = ( typeof obj.level === 'number' ) ? obj.level : ( this._levelThresholdForFilter( filter ) );
 		let levelName = this._levelNameFromValue( levelNumber );
-		if ( !this._shouldPrint( verbosity, levelNumber ) ) return '';
+		if ( !this._shouldPrint( filter, levelNumber ) ) return '';
 
 		const time = this._formatTimestamp( obj.time );
 		const common = this._formatCommon( obj );
@@ -239,13 +239,13 @@ class ConnectorLogging extends ConnectorEditor
 	_log( target, parameters )
 	{
 		if ( !parameters ) parameters = {};
-		var { level, verbosity, msg } = parameters;
+		var { level, filter, msg } = parameters;
 		var logger = ( target == 'http' ) ? this.httpLogger : this.appLogger;
 		if ( !logger ) return;
-		var pinoLevel = level ? this._normalizeLevel( level, verbosity ) : this._mapVerbosityToLevel( verbosity );
+		var pinoLevel = level ? this._normalizeLevel( level, filter ) : this._mapFilterToLevel( filter );
 		var payload = Object.assign( {}, parameters );
 		delete payload.level;
-		delete payload.verbosity;
+		delete payload.filter;
 		delete payload.msg;
 		payload.source = target;
 		try
@@ -317,8 +317,8 @@ class ConnectorLogging extends ConnectorEditor
 			let out = '';
 			if ( p.format )
 			{
-				const verbosity = p.formatVerbosity || p.verbosity || 'low';
-				out = this._formatEntry( 'http', p, verbosity );
+				const filter = p.formatFilter || p.filter || 'low';
+				out = this._formatEntry( 'http', p, filter );
 			}
 			return this.replySuccess( this.newAnswer( { ok: true, formatted: out }, '', 'data' ), message, editor );
 		}
@@ -338,8 +338,8 @@ class ConnectorLogging extends ConnectorEditor
 			let out = '';
 			if ( p.format )
 			{
-				const verbosity = p.formatVerbosity || p.verbosity || 'low';
-				out = this._formatEntry( 'app', p, verbosity );
+				const filter = p.formatFilter || p.filter || 'low';
+				out = this._formatEntry( 'app', p, filter );
 			}
 			return this.replySuccess( this.newAnswer( { ok: true, formatted: out }, '', 'data' ), message, editor );
 		}
@@ -356,8 +356,8 @@ class ConnectorLogging extends ConnectorEditor
 		{
 			const p = parameters || {};
 			const source = ( p && p.source ) || 'app';
-			const verbosity = p.formatVerbosity || p.verbosity || 'low';
-			const text = this._formatEntry( source, p, verbosity );
+			const filter = p.formatFilter || p.filter || 'low';
+			const text = this._formatEntry( source, p, filter );
 			return this.replySuccess( this.newAnswer( { text }, '', 'data' ), message, editor );
 		}
 		catch( e )
@@ -366,7 +366,7 @@ class ConnectorLogging extends ConnectorEditor
 		}
 	}
 
-	// Filters: { source: 'http'|'app', userId?, userName?, from?, to?, verbosity? }
+	// Filters: { source: 'http'|'app', userId?, userName?, from?, to?, filter? }
 	async command_getLogs( parameters, message, editor )
 	{
 		try
@@ -376,7 +376,7 @@ class ConnectorLogging extends ConnectorEditor
 			const userName = parameters && parameters.userName ? ('' + parameters.userName) : null;
 			const fromTs = parameters && parameters.from ? new Date( parameters.from ).getTime() : null;
 			const toTs = parameters && parameters.to ? new Date( parameters.to ).getTime() : null;
-			const minLevel = this._levelThresholdForVerbosity( parameters && parameters.verbosity );
+			const minLevel = this._levelThresholdForFilter( parameters && parameters.filter );
 			const limit = Math.max( 0, Math.min( parameters && parameters.limit ? parameters.limit : 500, 5000 ) );
 
 			let collected = [];
@@ -425,7 +425,7 @@ class ConnectorLogging extends ConnectorEditor
 			const userName = parameters && parameters.userName ? ('' + parameters.userName) : null;
 			const fromTs = parameters && parameters.from ? new Date( parameters.from ).getTime() : null;
 			const toTs = parameters && parameters.to ? new Date( parameters.to ).getTime() : null;
-			const minLevel = this._levelThresholdForVerbosity( parameters && parameters.verbosity );
+			const minLevel = this._levelThresholdForFilter( parameters && parameters.filter );
 
 			// Compute output path
 			let outPath = parameters && parameters.outPath;
