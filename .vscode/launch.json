@@ -19,6 +19,20 @@
         "envFile": "${workspaceFolder}/.env"
     },  
     {
+        "name": "ThinkNotes Server-macOS",
+        "program": "${workspaceFolder}/../thinkappsai/thinknotes/awi/mac_node_prompt.mjs",
+        "request": "launch",
+        "skipFiles": [
+            "<node_internals>/**"
+        ],
+        "cwd": "${workspaceFolder}",
+        "runtimeArgs": ["--preserve-symlinks"],
+        "console": "integratedTerminal",
+        "outputCapture": "std",
+        "type": "node",
+        "envFile": "${workspaceFolder}/.env"
+    },  
+    {
         "name": "Awi Server-Windows",
         "program": "${workspaceFolder}/windows-node-prompt.mjs",
         "request": "launch",

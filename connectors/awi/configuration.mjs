@@ -35,6 +35,7 @@ class ConnectorConfiguration extends ConnectorBase
 		this.configs = {};
 		this.platform = 'win32';
 		this.baskets = {};
+		this.userIdToConfig = {};
 
 		var self = this;
 		if ( typeof config.configurationPath == 'undefined' )
@@ -312,7 +313,6 @@ class ConnectorConfiguration extends ConnectorBase
 	async loadConfigs()
 	{
 		const newConfigs = {};
-		const newUserIdToConfig = {};
 
 		// If database is not available (e.g. delayed for setup), load defaults and return success
 		if (!this.awi.database)
@@ -382,7 +382,6 @@ class ConnectorConfiguration extends ConnectorBase
 		
 		// Atomic swap
 		this.configs = newConfigs;
-		this.userIdToConfig = newUserIdToConfig;
 
 		// Now run the standard loaders to fill in gaps (system, user, persona)
 		// These will update this.configs in place, which is now safe because 'system' exists.

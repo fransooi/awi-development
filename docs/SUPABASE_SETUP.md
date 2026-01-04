@@ -1,5 +1,7 @@
 # AWI Supabase Integration Guide
 
+> **⚠️ IMPORTANT:** Before proceeding, read [ABSOLUTE_ORDERS.md](./ABSOLUTE_ORDERS.md) for critical protocols regarding crashes and debugging.
+
 This document details how the **AWI (Artificial Wisdom Intelligence)** server integrates with **Supabase** to provide authentication, data persistence, and real-time capabilities.
 
 ---

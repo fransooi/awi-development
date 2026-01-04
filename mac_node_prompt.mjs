@@ -19,7 +19,7 @@
 *
 */
 import Awi from './awi.mjs';
-import { config as loadEnv } from 'dotenv';
+import { config as loadEnv } from './env.mjs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -30,6 +30,7 @@ loadEnv({ path: join(__dirname, '.env') });
 
 const projectPrefix = 'TOCOMPLETE_';
 const projectName = 'Awi Server';
+const userVerbosity = 4;
 
 async function startAwi( prompt, config )
 {
@@ -104,7 +105,9 @@ async function startAwi( prompt, config )
 ////////////////////
 function getArguments()
 {
-	var domain = 'http://localhost:8080';
+	var domain = process.env[projectPrefix + 'DOMAIN'] || 'http://localhost:8080';
+	var port = parseInt(process.env[projectPrefix + 'PORT']) || 8080;
+	var wsPort = parseInt(process.env[projectPrefix + 'WS_PORT']) || 1033;
   var envDataRoot = process.env[projectPrefix + 'DATA_ROOT'] || process.env.DATA_ROOT;
 	var dataRoot = envDataRoot || './data';
 	var dataPath = envDataRoot || './data';
@@ -121,7 +124,7 @@ function getArguments()
 	{
 		prompt: '',
 		logFilter: 'info warning error',
-		userVerbosity: 1,
+		userVerbosity: userVerbosity,
     projectPrefix: projectPrefix,
     projectName: projectName,
 		config: {},
@@ -133,15 +136,23 @@ function getArguments()
 			{ name: 'connectors/system/node', config: { priority: --priority }, options: {} },
 			{ name: 'connectors/system/files', config: { priority: --priority }, options: {} },
 			{ name: 'connectors/system/zip', config: { priority: --priority }, options: {} },
+      { name: 'connectors/awi/utilities', config: { priority: --priority }, options: {} },
+			{ name: 'connectors/awi/configuration', config: { priority: --priority,
+				configurationPath: configurationPath,
+				dataPath: dataPath,
+				tempPath: tempPath
+			}, options: { } },
 			{ name: 'connectors/awi/messages', config: { priority: --priority }, options: {} },
-			{ name: 'connectors/awi/utilities', config: { priority: --priority }, options: {} },
 
 
       ////////////////////////////////////////////////////////////////////////////////////
       // Database connectors, Supabase = https://supabase.com/
       ////////////////////////////////////////////////////////////////////////////////////
 			{ name: 'connectors/database/supabase', config: { priority: --priority }, options: {
-				projectPrefix: projectPrefix
+				projectPrefix: projectPrefix,
+				url: process.env[projectPrefix + 'SUPABASE_URL'],
+				secretKey: process.env[projectPrefix + 'SUPABASE_SECRET_KEY'],
+				serviceRoleKey: process.env[projectPrefix + 'SUPABASE_SERVICE_ROLE_KEY']
 			} },
 			//{ name: 'connectors/database/storage', config: { priority: --priority }, options: {
 			//	fileMode: 'supabase',
@@ -182,11 +193,6 @@ function getArguments()
       ////////////////////////////////////////////////////////////////////////////////////
       // Configuration
       ////////////////////////////////////////////////////////////////////////////////////
-			{ name: 'connectors/awi/configuration', config: { priority: --priority,
-				configurationPath: configurationPath,
-				dataPath: dataPath,
-				tempPath: tempPath
-			}, options: { } },
 			{ name: 'connectors/awi/properties', config: { priority: --priority,
 				propertiesPath: propertiesPath
 			}, options: { } },
@@ -198,7 +204,11 @@ function getArguments()
       // Authentication (need Google Cloud oauth via Supabase, handles Android apps too, 
       // iPhone to come)
       ////////////////////////////////////////////////////////////////////////////////////
-			{ name: 'connectors/awi/authentification_oauth', config: { priority: --priority }, options: {} },
+			{ name: 'connectors/awi/authentification_oauth', config: { priority: --priority }, options: {
+				projectPrefix: projectPrefix,
+				googleClientId: process.env[projectPrefix + 'GOOGLE_CLIENT_ID'] || process.env.GOOGLE_CLIENT_ID,
+				googleClientSecret: process.env[projectPrefix + 'GOOGLE_CLIENT_SECRET'] || process.env.GOOGLE_CLIENT_SECRET
+			} },
 
       ////////////////////////////////////////////////////////////////////////////////////
       // Network, default is http://localhost:8080
@@ -211,12 +221,19 @@ function getArguments()
 				envFilePath: join(__dirname, '.env'),
 				enableHttp: false,
 				enableHttps: false,
-				port: 8080,
-				httpsPort: 8080,
+				port: port,
+				httpsPort: port,
 				domain: domain,
 				tlsOptions: {},
 				projectPrefix: projectPrefix,
-				projectName: projectName
+				projectName: projectName,
+				zoomWebhookPath: process.env[projectPrefix + 'ZOOM_WEBHOOK_PATH'] || process.env.ZOOM_WEBHOOK_PATH,
+				zoomSecretToken: process.env[projectPrefix + 'ZOOM_SECRET_TOKEN'] || process.env.ZOOM_SECRET_TOKEN,
+				workspaceEventsWebhookPath: process.env[projectPrefix + 'WORKSPACE_EVENTS_WEBHOOK_PATH'] || process.env.WORKSPACE_EVENTS_WEBHOOK_PATH,
+				zoomClientId: process.env[projectPrefix + 'ZOOM_CLIENT_ID'] || process.env.ZOOM_CLIENT_ID,
+				zoomClientSecret: process.env[projectPrefix + 'ZOOM_CLIENT_SECRET'] || process.env.ZOOM_CLIENT_SECRET,
+				zoomRedirectUrl: process.env[projectPrefix + 'ZOOM_REDIRECT_URL'] || process.env.ZOOM_REDIRECT_URL,
+				zoomOauthScopes: process.env[projectPrefix + 'ZOOM_OAUTH_SCOPES'] || process.env.ZOOM_OAUTH_SCOPES
 			} },
 
       ////////////////////////////////////////////////////////////////////////////////////
@@ -231,7 +248,7 @@ function getArguments()
 			// Default port is 1033
 			////////////////////////////////////////////////////////////////////////////////////
 			{ name: 'connectors/network/websocketserver', config: { priority: --priority }, options: {
-					port: 1033,
+					port: wsPort,
 					enable: false
 			} },
 

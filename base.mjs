@@ -49,27 +49,28 @@ export default class Base
 		}
 		return answer;
 	}
-	newWarning( definition, logData = {} )
+	newWarning( definition, logData )
 	{
 		var { message, data, type, functionName } = definition;
 		var answer = new Answer( this, data, message, type );
 		answer.setWarning( message );
+    if (!logData || logData.noLog)
+      return answer;
+    
 		answer.awi.log( answer.getPrint(), {
 			source: 'awi',
 			level: 'warning',
-			className: this.className,
-			version: this.version,
-			functionName: functionName,
+      stack: logData.stack,
 			...logData
 		} );
 		return answer;
 	}
-	newError( definition, logData = {}, extraData )
+	newError( definition, logData, extraData )
 	{
 		var { message, data, type, functionName } = definition;
 		var answer = new Answer( this, data, message, type );
 		answer.setError( message );
-    if (logData.noLog)
+    if (!logData || logData.noLog)
       return answer;
     
 		var errorData = {
@@ -84,10 +85,7 @@ export default class Base
 			errorData = { ...errorData, ...extraData };
 		answer.awi.log( answer.getPrint(), errorData );
 		if (this.debug)
-		{
 			answer.extraData = this.sanitizeForJson(errorData);
-			console.log('ERROR!', answer.extraData );
-		}
 		return answer;
 	}
 

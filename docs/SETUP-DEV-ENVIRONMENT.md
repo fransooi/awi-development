@@ -1,5 +1,9 @@
 # Setting Up the AWI Development Environment
 
+> **⚠️ IMPORTANT:** Before proceeding, read [ABSOLUTE_ORDERS.md](./ABSOLUTE_ORDERS.md) for critical protocols regarding crashes and debugging.
+
+> **⚠️ IMPORTANT:** Before proceeding, read [ABSOLUTE_ORDERS.md](./ABSOLUTE_ORDERS.md) for critical protocols regarding crashes and debugging.
+
 This guide will help you set up your local development environment for the **AWI Server**. It covers setup for **macOS**, **Windows**, and **Linux**.
 
 ## 1. Prerequisites

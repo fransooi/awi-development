@@ -48,10 +48,14 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		} catch {}
 	}
 
-	async connect()
+	async connect(options = {})
 	{
 		// No need to load all accounts into memory anymore.
 		// The database is the source of truth.
+		await super.connect(options);
+		this.projectPrefix = options.projectPrefix || '';
+		this.googleClientId = options.googleClientId || process.env[this.projectPrefix + 'GOOGLE_CLIENT_ID'] || process.env.GOOGLE_CLIENT_ID || '';
+		this.googleClientSecret = options.googleClientSecret || process.env[this.projectPrefix + 'GOOGLE_CLIENT_SECRET'] || process.env.GOOGLE_CLIENT_SECRET || '';
 		return this.setConnected(true);
 	}
   async validateToken(parameters)
@@ -543,8 +547,8 @@ class ConnectorAuthentification_OAuth extends ConnectorBase
 		if (!data.refresh_token) 
 			return this.newError({ message: 'awi:refresh-token-not-found' }, { stack: new Error().stack });
 
-		const clientId = process.env[this.awi.projectPrefix + 'GOOGLE_CLIENT_ID'] || process.env.GOOGLE_CLIENT_ID || '';
-		const clientSecret = process.env[this.awi.projectPrefix + 'GOOGLE_CLIENT_SECRET'] || process.env.GOOGLE_CLIENT_SECRET || '';
+		const clientId = this.googleClientId;
+		const clientSecret = this.googleClientSecret;
 		if (!clientId || !clientSecret)
 			return this.newError({ message: 'awi:google-client-id-or-secret-not-found' }, { stack: new Error().stack });
 		try

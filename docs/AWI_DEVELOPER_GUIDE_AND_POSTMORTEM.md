@@ -1,5 +1,9 @@
 # AWI Developer Guide & Post-Mortem: The Recursion Bug
 
+> **⚠️ IMPORTANT:** Before proceeding, read [ABSOLUTE_ORDERS.md](./ABSOLUTE_ORDERS.md) for critical protocols regarding crashes and debugging.
+
+> **⚠️ IMPORTANT:** Before proceeding, read [ABSOLUTE_ORDERS.md](./ABSOLUTE_ORDERS.md) for critical protocols regarding crashes and debugging.
+
 **Date:** January 2, 2026
 **Topic:** Critical Recursion Bug in Procedure Execution & Parser Logic
 **Status:** Resolved

@@ -88,7 +88,14 @@ class ConnectorHttpServer extends ConnectorBase
 			watchOptions: options.watchOptions || {
 				ignored: /(^|[\/\\])\./, // ignore dotfiles
 				ignoreInitial: true
-			}
+			},
+			zoomWebhookPath: options.zoomWebhookPath || process.env[(options.projectPrefix || '') + 'ZOOM_WEBHOOK_PATH'] || process.env.ZOOM_WEBHOOK_PATH || '/webhooks/zoom',
+			zoomSecretToken: options.zoomSecretToken || process.env[(options.projectPrefix || '') + 'ZOOM_SECRET_TOKEN'] || process.env.ZOOM_SECRET_TOKEN || 'CHANGE_ME_SECRET_TOKEN',
+			workspaceEventsWebhookPath: options.workspaceEventsWebhookPath || process.env[(options.projectPrefix || '') + 'WORKSPACE_EVENTS_WEBHOOK_PATH'] || process.env.WORKSPACE_EVENTS_WEBHOOK_PATH || '/workspace-events/pubsub',
+			zoomClientId: options.zoomClientId || process.env[(options.projectPrefix || '') + 'ZOOM_CLIENT_ID'] || process.env.ZOOM_CLIENT_ID || 'CHANGE_ME_CLIENT_ID',
+			zoomClientSecret: options.zoomClientSecret || process.env[(options.projectPrefix || '') + 'ZOOM_CLIENT_SECRET'] || process.env.ZOOM_CLIENT_SECRET || 'CHANGE_ME_CLIENT_SECRET',
+			zoomRedirectUrl: options.zoomRedirectUrl || process.env[(options.projectPrefix || '') + 'ZOOM_REDIRECT_URL'] || process.env.ZOOM_REDIRECT_URL || (this.domain + '/zoom/oauth/callback'),
+			zoomOauthScopes: options.zoomOauthScopes || process.env[(options.projectPrefix || '') + 'ZOOM_OAUTH_SCOPES'] || process.env.ZOOM_OAUTH_SCOPES || 'user:read meeting:read'
 		};
 
 		var countComplete = 0;
@@ -172,12 +179,40 @@ class ConnectorHttpServer extends ConnectorBase
 					var answer = await this.awi.configuration.saveConfigs();
 					
 					if (answer.isSuccess()) {
+						// Notify console - DO NOT auto-login, wait for explicit login
+						if (this.awi.editor) {
+							this.awi.editor.print(`User '${config.userName}' created via Web UI. Waiting for login...`, { user: 'success' });
+						}
+
 						return res.json({ success: true });
 					} else {
 						return res.status(500).json({ success: false, message: answer.message });
 					}
 				} catch (e) {
 					return res.status(500).json({ success: false, message: e.message });
+				}
+			});
+
+			// Simple Login Endpoint for UI
+			this.app.post('/awi/login', async (req, res) => {
+				const { userName } = req.body;
+				if (!userName) return res.status(400).json({ success: false, message: 'Missing username' });
+
+				const userConfig = this.awi.configuration.checkUserConfig(userName.toLowerCase());
+				if (userConfig) {
+					// Login on server side
+					await this.awi.configuration.setUser({ userName: userName.toLowerCase() }, {}, {});
+					if (this.awi.persona) await this.awi.persona.setUser({ userName: userName.toLowerCase() }, {}, {});
+
+					// Notify console
+					if (this.awi.editor) {
+						this.awi.editor.print(`User '${userName}' logged in via Web UI.`, { user: 'success' });
+						this.awi.editor.print(`Please press ENTER to continue...`, { user: 'systemwarning' });
+					}
+
+					return res.json({ success: true, user: userConfig });
+				} else {
+					return res.status(404).json({ success: false, message: 'User not found' });
 				}
 			});
 
@@ -994,8 +1029,7 @@ class ConnectorHttpServer extends ConnectorBase
 
 			// Zoom Webhook endpoint: prefer configuration from zoomrtms connector
 			const zoomConn = this.awi && this.awi.zoomrtms ? this.awi.zoomrtms : null;
-			const prefix = this.serverConfig.projectPrefix || '';
-			const zoomWebhookPath = (zoomConn && zoomConn.getWebhookPath && zoomConn.getWebhookPath()) || process.env[prefix + 'ZOOM_WEBHOOK_PATH'] || process.env.ZOOM_WEBHOOK_PATH || '/webhooks/zoom';
+			const zoomWebhookPath = (zoomConn && zoomConn.getWebhookPath && zoomConn.getWebhookPath()) || this.serverConfig.zoomWebhookPath;
 			this.app.post(zoomWebhookPath, async (req, res) =>
 			{
 				try
@@ -1007,7 +1041,7 @@ class ConnectorHttpServer extends ConnectorBase
 					// URL validation challenge
 					if (event === 'endpoint.url_validation' && payload.plainToken)
 					{
-						const secret = (zoomConn && zoomConn.getSecretToken && zoomConn.getSecretToken()) || process.env[prefix + 'ZOOM_SECRET_TOKEN'] || process.env.ZOOM_SECRET_TOKEN || 'CHANGE_ME_SECRET_TOKEN';
+						const secret = (zoomConn && zoomConn.getSecretToken && zoomConn.getSecretToken()) || this.serverConfig.zoomSecretToken;
 						const hash = crypto.createHmac('sha256', secret).update(payload.plainToken).digest('hex');
 						return res.json({ plainToken: payload.plainToken, encryptedToken: hash });
 					}
@@ -1046,7 +1080,7 @@ class ConnectorHttpServer extends ConnectorBase
 				}
 			});
 
-			const workspaceEventsPath = process.env[prefix + 'WORKSPACE_EVENTS_WEBHOOK_PATH'] || process.env.WORKSPACE_EVENTS_WEBHOOK_PATH || '/workspace-events/pubsub';
+			const workspaceEventsPath = this.serverConfig.workspaceEventsWebhookPath;
 			this.app.post(workspaceEventsPath, async (req, res) =>
 			{
 				try
@@ -1089,10 +1123,9 @@ class ConnectorHttpServer extends ConnectorBase
 				try
 				{
 					const z = this.awi && this.awi.zoomrtms ? this.awi.zoomrtms : null;
-					const prefix = this.serverConfig.projectPrefix || '';
-					const clientId = (z && z.getClientId && z.getClientId()) || process.env[prefix + 'ZOOM_CLIENT_ID'] || process.env.ZOOM_CLIENT_ID || 'CHANGE_ME_CLIENT_ID';
-					const redirectUrl = (z && z.getRedirectUrl && z.getRedirectUrl(this.domain)) || process.env[prefix + 'ZOOM_REDIRECT_URL'] || process.env.ZOOM_REDIRECT_URL || (this.domain + '/zoom/oauth/callback');
-					const scope = (z && z.getOauthScopes && z.getOauthScopes()) || process.env[prefix + 'ZOOM_OAUTH_SCOPES'] || process.env.ZOOM_OAUTH_SCOPES || 'user:read meeting:read';
+					const clientId = (z && z.getClientId && z.getClientId()) || this.serverConfig.zoomClientId;
+					const redirectUrl = (z && z.getRedirectUrl && z.getRedirectUrl(this.domain)) || this.serverConfig.zoomRedirectUrl;
+					const scope = (z && z.getOauthScopes && z.getOauthScopes()) || this.serverConfig.zoomOauthScopes;
 					const userId = (req.query && (req.query.userId || req.query.user_id)) || null;
 					const returnTo = (req.query && (req.query.return_to || req.query.returnTo)) || '/user/settings';
 					if (!userId)
@@ -1131,10 +1164,9 @@ class ConnectorHttpServer extends ConnectorBase
 				try
 				{
 					const z = this.awi && this.awi.zoomrtms ? this.awi.zoomrtms : null;
-					const prefix = this.serverConfig.projectPrefix || '';
-					const clientId = (z && z.getClientId && z.getClientId()) || process.env[prefix + 'ZOOM_CLIENT_ID'] || process.env.ZOOM_CLIENT_ID || 'CHANGE_ME_CLIENT_ID';
-					const clientSecret = (z && z.getClientSecret && z.getClientSecret()) || process.env[prefix + 'ZOOM_CLIENT_SECRET'] || process.env.ZOOM_CLIENT_SECRET || 'CHANGE_ME_CLIENT_SECRET';
-					const redirectUrl = (z && z.getRedirectUrl && z.getRedirectUrl(this.domain)) || process.env[prefix + 'ZOOM_REDIRECT_URL'] || process.env.ZOOM_REDIRECT_URL || (this.domain + '/zoom/oauth/callback');
+					const clientId = (z && z.getClientId && z.getClientId()) || this.serverConfig.zoomClientId;
+					const clientSecret = (z && z.getClientSecret && z.getClientSecret()) || this.serverConfig.zoomClientSecret;
+					const redirectUrl = (z && z.getRedirectUrl && z.getRedirectUrl(this.domain)) || this.serverConfig.zoomRedirectUrl;
 					const code = req.query && req.query.code ? req.query.code : '';
 					const state = req.query && req.query.state ? req.query.state : '';
 					if (!code || !state)

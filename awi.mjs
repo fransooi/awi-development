@@ -467,14 +467,13 @@ export default class Awi extends Base
 		while ( lvl.length < 8 )
 			lvl += ' ';
 		let text = `${ now } ${ lvl }`;
-		if ( params.className ) 
-			text += ' ' + params.className;
-		if ( params.functionName ) 
-			text += '.' + params.functionName;
+		text += ' ' + message;
 		if ( params.userName ) 
 			text += ' ' + params.userName;
 		else if ( params.userId ) 
 			text += ' ' + params.userId;
+		if ( params.stack ) 
+			text += '.' + params.stack;
 		if ( params.source === 'http' )
 		{
 			if ( params.method ) 
@@ -490,7 +489,6 @@ export default class Awi extends Base
 			if ( typeof params.contentLength !== 'undefined' ) 
 				text += ' ' + params.contentLength;
 		}
-		text += ' ' + message;
 		return text;
 	}
 	alert( message, options )

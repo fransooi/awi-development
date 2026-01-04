@@ -127,21 +127,35 @@ class BubbleWelcome extends BubbleBase
 		}
 
 		// 2. Interactive Login / Onboarding Flow
+		if ( !this.awi.configuration.isUserLogged() )
+		{
+			control.editor.print( '****************************************************************', { user: 'awi', verbose: 4 } );
+			control.editor.print( '*                                                              *', { user: 'awi', verbose: 4 } );
+			control.editor.print( '*  WELCOME TO THINKNOTES                                       *', { user: 'awi', verbose: 4 } );
+			control.editor.print( '*  Please login or create a new user                           *', { user: 'awi', verbose: 4 } );
+			control.editor.print( '*                                                              *', { user: 'awi', verbose: 4 } );
+			control.editor.print( '****************************************************************', { user: 'awi', verbose: 4 } );
+		}
+
 		while ( !this.awi.configuration.isUserLogged() )
 		{
 			// Prompt for username
 			const loginPrompt = await this.awi.prompt.getParameters( {
-				list: [ { name: 'username', description: "your user name (or 'newuser' to create one)", type: 'string', optional: false } ],
+				list: [ { name: 'username', description: "your user name, 'newuser' to create one, or Enter to check remote login", type: 'string', optional: true } ],
 				args: {} 
 			}, basket, control );
 
 			if ( loginPrompt.isError() ) return loginPrompt;
 			
 			const values = loginPrompt.getValue();
+			
+			// Check if we were logged in externally (e.g. via Web UI) while waiting
+			if ( this.awi.configuration.isUserLogged() ) break;
+
 			if ( !values || !values.username )
 			{
-				// Input might be interrupted or a command was executed
-				control.editor.print( 'Invalid input, please try again.', { user: 'warning', verbose: 4 } );
+				// Input might be empty (Enter pressed) or interrupted
+				// Just loop again to check status
 				continue;
 			}
 			

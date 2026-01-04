@@ -1,4 +1,8 @@
-# AWI Server Engine Documentation
+# AWI Server Documentation
+
+> **⚠️ IMPORTANT:** Before proceeding, read [ABSOLUTE_ORDERS.md](./ABSOLUTE_ORDERS.md) for critical protocols regarding crashes and debugging.
+
+> **⚠️ IMPORTANT:** Before proceeding, read [ABSOLUTE_ORDERS.md](./ABSOLUTE_ORDERS.md) for critical protocols regarding crashes and debugging.
 
 ## 1. System Overview & Philosophy
 
